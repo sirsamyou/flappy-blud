@@ -16,21 +16,17 @@ const highScoreDisplay = document.getElementById('high-score');
 const highScoreEndDisplay = document.getElementById('high-score-end');
 const currentUserDisplay = document.getElementById('current-user');
 const startBtn = document.getElementById('start-btn');
-const restartBtn = document.getElementById('restart-btn');
 const pauseBtn = document.getElementById('pause-btn');
+const restartBtn = document.getElementById('restart-btn');
 const gameOverScreen = document.getElementById('game-over');
 const menu = document.getElementById('menu');
 const gameUi = document.getElementById('game-ui');
 const gameMenu = document.getElementById('game-menu');
-const accountSection = document.getElementById('account-section');
-const accountForm = document.getElementById('account-form');
-const accountBtn = document.getElementById('account-btn');
-const toggleFormBtn = document.getElementById('toggle-form');
-const accountTitle = document.getElementById('account-title');
-const accountError = document.getElementById('account-error');
+const usernameSection = document.getElementById('username-section');
+const usernameForm = document.getElementById('username-form');
+const usernameBtn = document.getElementById('username-btn');
+const usernameError = document.getElementById('username-error');
 const usernameInput = document.getElementById('username');
-const passwordInput = document.getElementById('password');
-const logoutBtn = document.getElementById('logout-btn');
 const characterButtons = document.querySelectorAll('.character-btn');
 const leaderboardDisplay = document.getElementById('leaderboard-display');
 const tabButtons = document.querySelectorAll('.tab-btn');
@@ -41,9 +37,47 @@ let isPlaying = false;
 let isPaused = false;
 let animationFrameId;
 let selectedBird = 'sparrow';
-let currentUser = null;
-let isLoginMode = true;
+let currentUser = localStorage.getItem('flappyUsername') || null;
 let userId = null;
+
+// Show username section if no user
+if (currentUser) {
+    usernameSection.classList.add('hidden');
+    gameMenu.classList.remove('hidden');
+    menu.classList.remove('hidden');
+    currentUserDisplay.textContent = currentUser;
+    highScore = parseInt(localStorage.getItem(`highScore_${currentUser}`)) || 0;
+    highScoreDisplay.textContent = highScore;
+    highScoreEndDisplay.textContent = highScore;
+} else {
+    menu.classList.remove('hidden');
+}
+
+// Firebase auth
+firebase.auth().onAuthStateChanged((user) => {
+    if (user) userId = user.uid;
+});
+
+// Username handling
+usernameForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const username = usernameInput.value.trim();
+    if (username.length < 3 || username.length > 20) {
+        usernameError.textContent = 'Username must be 3-20 characters';
+        usernameError.classList.remove('hidden');
+        return;
+    }
+    currentUser = username;
+    localStorage.setItem('flappyUsername', currentUser);
+    currentUserDisplay.textContent = currentUser;
+    highScore = parseInt(localStorage.getItem(`highScore_${currentUser}`)) || 0;
+    highScoreDisplay.textContent = highScore;
+    highScoreEndDisplay.textContent = highScore;
+    usernameSection.classList.add('hidden');
+    gameMenu.classList.remove('hidden');
+    usernameInput.value = '';
+    usernameError.classList.add('hidden');
+});
 
 // Canvas resizing
 function resizeCanvas() {
@@ -66,74 +100,6 @@ function resizeCanvas() {
 
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
-
-// Load accounts from localStorage
-const accounts = JSON.parse(localStorage.getItem('flappyAccounts')) || {};
-
-// Firebase auth
-firebase.auth().onAuthStateChanged((user) => {
-    if (user) userId = user.uid;
-});
-
-// Account handling
-accountForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const username = usernameInput.value.trim();
-    const password = passwordInput.value.trim();
-    accountError.classList.add('hidden');
-
-    if (isLoginMode) {
-        if (accounts[username] && accounts[username].password === password) {
-            currentUser = username;
-            highScore = accounts[username].highScore || 0;
-            currentUserDisplay.textContent = currentUser;
-            highScoreDisplay.textContent = highScore;
-            highScoreEndDisplay.textContent = highScore;
-            accountSection.classList.add('hidden');
-            gameMenu.classList.remove('hidden');
-            menu.classList.remove('hidden');
-            usernameInput.value = '';
-            passwordInput.value = '';
-        } else {
-            accountError.textContent = 'Invalid username or password';
-            accountError.classList.remove('hidden');
-        }
-    } else {
-        if (accounts[username]) {
-            accountError.textContent = 'Username already exists';
-            accountError.classList.remove('hidden');
-        } else {
-            accounts[username] = { password, highScore: 0 };
-            localStorage.setItem('flappyAccounts', JSON.stringify(accounts));
-            accountError.textContent = 'Account created! Please log in.';
-            accountError.classList.remove('hidden');
-            toggleForm();
-        }
-    }
-});
-
-function toggleForm() {
-    isLoginMode = !isLoginMode;
-    accountTitle.textContent = isLoginMode ? 'Login' : 'Create Account';
-    accountBtn.textContent = isLoginMode ? 'Login' : 'Register';
-    toggleFormBtn.textContent = isLoginMode ? 'Create Account' : 'Back to Login';
-    accountError.classList.add('hidden');
-    usernameInput.value = '';
-    passwordInput.value = '';
-}
-
-toggleFormBtn.addEventListener('click', toggleForm);
-
-logoutBtn.addEventListener('click', () => {
-    currentUser = null;
-    gameMenu.classList.add('hidden');
-    accountSection.classList.remove('hidden');
-    menu.classList.remove('hidden');
-    score = 0;
-    scoreDisplay.textContent = score;
-    highScoreDisplay.textContent = '0';
-    currentUserDisplay.textContent = '';
-});
 
 // Character selection
 characterButtons.forEach(button => {
@@ -218,7 +184,7 @@ let pipeFrequency = 100;
 let frameCount = 0;
 
 // Game loop
-function gameLOOP() {
+function gameLoop() {
     if (!isPlaying || isPaused) return;
 
     update();
@@ -335,8 +301,7 @@ async function endGame() {
     finalScoreDisplay.textContent = score;
     if (score > highScore) {
         highScore = score;
-        accounts[currentUser].highScore = highScore;
-        localStorage.setItem('flappyAccounts', JSON.stringify(accounts));
+        localStorage.setItem(`highScore_${currentUser}`, highScore);
         highScoreDisplay.textContent = highScore;
         highScoreEndDisplay.textContent = highScore;
         await submitScoreToLeaderboard(score, currentUser);
