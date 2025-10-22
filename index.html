@@ -2,16 +2,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Flappy Birds</title>
     <link rel="stylesheet" href="styles.css">
-    <!-- Firebase SDKs -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-database-compat.js"></script>
 </head>
 <body>
     <div class="container">
-        <div id="menu" class="menu">
+        <div id="menu" class="menu hidden">
             <h1>Flappy Birds</h1>
             <div id="account-section">
                 <h3 id="account-title">Login</h3>
@@ -35,23 +35,28 @@
             </div>
         </div>
         <div id="game-ui" class="hidden">
-            <p>Score: <span id="score">0</span></p>
-            <p>High Score (<span id="current-user"></span>): <span id="high-score">0</span></p>
-            <canvas id="gameCanvas" width="400" height="600"></canvas>
+            <div class="game-hud">
+                <p>Score: <span id="score">0</span></p>
+                <p>High Score (<span id="current-user"></span>): <span id="high-score">0</span></p>
+                <button id="pause-btn">Pause</button>
+            </div>
+            <canvas id="gameCanvas"></canvas>
             <div id="game-over" class="hidden">
-                <h2>Game Over</h2>
-                <p>Score: <span id="final-score">0</span></p>
-                <p>High Score: <span id="high-score-end">0</span></p>
-                <div id="leaderboard-section">
-                    <h3>Leaderboards</h3>
-                    <div class="tab-buttons">
-                        <button class="tab-btn active" data-tab="global">Global</button>
-                        <button class="tab-btn" data-tab="monthly">Monthly</button>
-                        <button class="tab-btn" data-tab="daily">Daily</button>
+                <div class="game-over-content">
+                    <h2>Game Over</h2>
+                    <p>Score: <span id="final-score">0</span></p>
+                    <p>High Score: <span id="high-score-end">0</span></p>
+                    <div id="leaderboard-section">
+                        <h3>Leaderboards</h3>
+                        <div class="tab-buttons">
+                            <button class="tab-btn active" data-tab="global">Global</button>
+                            <button class="tab-btn" data-tab="monthly">Monthly</button>
+                            <button class="tab-btn" data-tab="daily">Daily</button>
+                        </div>
+                        <div id="leaderboard-display"></div>
                     </div>
-                    <div id="leaderboard-display"></div>
+                    <button id="restart-btn">Restart</button>
                 </div>
-                <button id="restart-btn">Restart</button>
             </div>
         </div>
     </div>
