@@ -1,7 +1,13 @@
-// Replace with your Firebase config
+// Firebase configuration for flappy-blud
 const firebaseConfig = {
-    // Example: apiKey: "AIzaSy...", authDomain: "yourproject.firebaseapp.com", ...
-    // Paste your config here
+  apiKey: "AIzaSyD-tNj6_6jLIAuYKqice9081VjKESO7OCI",
+  authDomain: "flappy-blud.firebaseapp.com",
+  databaseURL: "https://flappy-blud-default-rtdb.firebaseio.com",
+  projectId: "flappy-blud",
+  storageBucket: "flappy-blud.firebasestorage.app",
+  messagingSenderId: "566536613015",
+  appId: "1:566536613015:web:7599ca7c0c253f65420dd2",
+  measurementId: "G-RNEMPRW2FW"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -21,7 +27,6 @@ const restartBtn = document.getElementById('restart-btn');
 const gameOverScreen = document.getElementById('game-over');
 const menu = document.getElementById('menu');
 const gameUi = document.getElementById('game-ui');
-const gameMenu = document.getElementById('game-menu');
 const usernameSection = document.getElementById('username-section');
 const usernameForm = document.getElementById('username-form');
 const usernameBtn = document.getElementById('username-btn');
