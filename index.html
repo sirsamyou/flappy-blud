@@ -5,12 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flappy Blud</title>
     <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 </head>
 <body>
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
         <div id="start-screen">
             <h1>Flappy Blud</h1>
+            <div id="skin-selector">
+                <h3>Select Skin</h3>
+                <button class="skin-button" data-skin="bird1.png">Bird 1</button>
+                <button class="skin-button" data-skin="bird2.png">Bird 2</button>
+            </div>
             <button id="start-button">Start Game</button>
         </div>
         <div id="game-over-screen" class="hidden">
