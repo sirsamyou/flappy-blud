@@ -2,60 +2,28 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flappy Blud</title>
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-database-compat.js"></script>
 </head>
 <body>
-    <div class="container">
-        <div id="menu" class="menu hidden">
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div id="start-screen">
             <h1>Flappy Blud</h1>
-            <div id="username-section">
-                <h3>Enter Your Username</h3>
-                <form id="username-form">
-                    <input type="text" id="username" placeholder="Username" required>
-                    <button type="submit" id="username-btn">Set Username</button>
-                </form>
-                <p id="username-error" class="error hidden"></p>
-            </div>
-            <div id="game-menu" class="hidden">
-                <h3>Choose Your Bird</h3>
-                <div class="character-selection">
-                    <button class="character-btn" data-bird="sparrow">Sparrow</button>
-                    <button class="character-btn" data-bird="parrot">Parrot</button>
-                    <button class="character-btn" data-bird="owl">Owl</button>
-                </div>
-                <button id="start-btn">Start Game</button>
-            </div>
+            <button id="start-button">Start Game</button>
         </div>
-        <div id="game-ui" class="hidden">
-            <div class="game-hud">
-                <p>Score: <span id="score">0</span></p>
-                <p>High Score (<span id="current-user"></span>): <span id="high-score">0</span></p>
-                <button id="pause-btn">Pause</button>
-            </div>
-            <canvas id="gameCanvas"></canvas>
-            <div id="game-over" class="hidden">
-                <div class="game-over-content">
-                    <h2>Game Over</h2>
-                    <p>Score: <span id="final-score">0</span></p>
-                    <p>High Score: <span id="high-score-end">0</span></p>
-                    <div id="leaderboard-section">
-                        <h3>Leaderboards</h3>
-                        <div class="tab-buttons">
-                            <button class="tab-btn active" data-tab="global">Global</button>
-                            <button class="tab-btn" data-tab="monthly">Monthly</button>
-                            <button class="tab-btn" data-tab="daily">Daily</button>
-                        </div>
-                        <div id="leaderboard-display"></div>
-                    </div>
-                    <button id="restart-btn">Restart</button>
-                </div>
-            </div>
+        <div id="game-over-screen" class="hidden">
+            <h1>Game Over</h1>
+            <p>Score: <span id="final-score"></span></p>
+            <p>High Score: <span id="high-score"></span></p>
+            <button id="restart-button">Restart</button>
         </div>
+        <div id="pause-screen" class="hidden">
+            <h1>Paused</h1>
+            <p>Press P to Resume</p>
+        </div>
+        <div id="score-display">Score: <span id="current-score">0</span></div>
     </div>
     <script src="script.js"></script>
 </body>
