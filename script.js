@@ -1,13 +1,11 @@
-// Your Firebase config - Replace with your project's config
+// Replace with your Firebase config
 const firebaseConfig = {
     // Example: apiKey: "AIzaSy...", authDomain: "yourproject.firebaseapp.com", ...
-    // Paste your full config here
+    // Paste your config here
 };
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
-
-// Anonymous auth for simple user tracking (optional but recommended for unique IDs)
 firebase.auth().signInAnonymously().catch(console.error);
 
 const canvas = document.getElementById('gameCanvas');
@@ -19,6 +17,7 @@ const highScoreEndDisplay = document.getElementById('high-score-end');
 const currentUserDisplay = document.getElementById('current-user');
 const startBtn = document.getElementById('start-btn');
 const restartBtn = document.getElementById('restart-btn');
+const pauseBtn = document.getElementById('pause-btn');
 const gameOverScreen = document.getElementById('game-over');
 const menu = document.getElementById('menu');
 const gameUi = document.getElementById('game-ui');
@@ -39,23 +38,44 @@ const tabButtons = document.querySelectorAll('.tab-btn');
 let score = 0;
 let highScore = 0;
 let isPlaying = false;
+let isPaused = false;
 let animationFrameId;
 let selectedBird = 'sparrow';
 let currentUser = null;
 let isLoginMode = true;
-let userId = null; // From Firebase auth
+let userId = null;
 
-// Load accounts from localStorage (fallback)
+// Canvas resizing
+function resizeCanvas() {
+    const maxWidth = 400;
+    const maxHeight = 600;
+    const aspectRatio = maxWidth / maxHeight;
+
+    let width = window.innerWidth;
+    let height = window.innerHeight - 80; // Account for HUD
+
+    if (width / height > aspectRatio) {
+        width = height * aspectRatio;
+    } else {
+        height = width / aspectRatio;
+    }
+
+    canvas.width = Math.min(width, maxWidth);
+    canvas.height = Math.min(height, maxHeight);
+}
+
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+// Load accounts from localStorage
 const accounts = JSON.parse(localStorage.getItem('flappyAccounts')) || {};
 
-// Get Firebase user ID after auth
+// Firebase auth
 firebase.auth().onAuthStateChanged((user) => {
-    if (user) {
-        userId = user.uid;
-    }
+    if (user) userId = user.uid;
 });
 
-// Account form handling (same as before)
+// Account handling
 accountForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const username = usernameInput.value.trim();
@@ -71,6 +91,7 @@ accountForm.addEventListener('submit', (e) => {
             highScoreEndDisplay.textContent = highScore;
             accountSection.classList.add('hidden');
             gameMenu.classList.remove('hidden');
+            menu.classList.remove('hidden');
             usernameInput.value = '';
             passwordInput.value = '';
         } else {
@@ -107,13 +128,14 @@ logoutBtn.addEventListener('click', () => {
     currentUser = null;
     gameMenu.classList.add('hidden');
     accountSection.classList.remove('hidden');
+    menu.classList.remove('hidden');
     score = 0;
     scoreDisplay.textContent = score;
     highScoreDisplay.textContent = '0';
     currentUserDisplay.textContent = '';
 });
 
-// Character selection (same)
+// Character selection
 characterButtons.forEach(button => {
     button.addEventListener('click', () => {
         characterButtons.forEach(btn => btn.classList.remove('selected'));
@@ -122,15 +144,26 @@ characterButtons.forEach(button => {
     });
 });
 
-// Start game (same)
+// Start game
 startBtn.addEventListener('click', () => {
     menu.classList.add('hidden');
     gameUi.classList.remove('hidden');
     isPlaying = true;
+    isPaused = false;
+    pauseBtn.textContent = 'Pause';
     gameLoop();
 });
 
-// Restart (same)
+// Pause button
+pauseBtn.addEventListener('click', () => {
+    if (!isPlaying) return;
+    isPaused = !isPaused;
+    pauseBtn.textContent = isPaused ? 'Resume' : 'Pause';
+    if (!isPaused) gameLoop();
+    else cancelAnimationFrame(animationFrameId);
+});
+
+// Restart
 restartBtn.addEventListener('click', () => {
     score = 0;
     scoreDisplay.textContent = score;
@@ -140,34 +173,37 @@ restartBtn.addEventListener('click', () => {
     frameCount = 0;
     gameOverScreen.classList.add('hidden');
     isPlaying = true;
+    isPaused = false;
+    pauseBtn.textContent = 'Pause';
     gameLoop();
 });
 
-// Flap controls (same)
+// Flap controls
 document.addEventListener('keydown', (e) => {
-    if (e.code === 'Space' && isPlaying) {
+    if (e.code === 'Space' && isPlaying && !isPaused) {
         bird.velocity = bird.flap;
     }
 });
 canvas.addEventListener('click', () => {
-    if (isPlaying) {
+    if (isPlaying && !isPaused) {
         bird.velocity = bird.flap;
     }
 });
-canvas.addEventListener('touchstart', () => {
-    if (isPlaying) {
+canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    if (isPlaying && !isPaused) {
         bird.velocity = bird.flap;
     }
 });
 
-// Bird and pipes (same)
+// Bird and pipes
 const bird = {
     x: 100,
     y: canvas.height / 2,
     radius: 15,
     velocity: 0,
-    gravity: 0.5,
-    flap: -10,
+    gravity: 0.4,
+    flap: -9,
     colors: {
         sparrow: '#ff6b6b',
         parrot: '#4ecdc4',
@@ -177,13 +213,14 @@ const bird = {
 
 const pipes = [];
 const pipeWidth = 50;
-const pipeGap = 150;
-let pipeFrequency = 90;
+const pipeGap = 160;
+let pipeFrequency = 100;
 let frameCount = 0;
 
-// Game loop and update/draw (same as before, omitted for brevity)
-function gameLoop() {
-    if (!isPlaying) return;
+// Game loop
+function gameLOOP() {
+    if (!isPlaying || isPaused) return;
+
     update();
     draw();
     animationFrameId = requestAnimationFrame(gameLoop);
@@ -246,11 +283,8 @@ function draw() {
 // Leaderboard functions
 function getCurrentDatePath(type) {
     const now = new Date();
-    if (type === 'daily') {
-        return now.toISOString().split('T')[0]; // YYYY-MM-DD
-    } else if (type === 'monthly') {
-        return now.toISOString().slice(0, 7); // YYYY-MM
-    }
+    if (type === 'daily') return now.toISOString().split('T')[0];
+    if (type === 'monthly') return now.toISOString().slice(0, 7);
     return 'global';
 }
 
@@ -259,15 +293,9 @@ async function submitScoreToLeaderboard(score, username) {
     const timestamp = Date.now();
     const entry = { username, score, timestamp, userId };
 
-    // Submit to global
     await db.ref('global').push(entry);
-
-    // Submit to monthly and daily
-    const monthlyPath = `monthly/${getCurrentDatePath('monthly')}`;
-    await db.ref(monthlyPath).push(entry);
-
-    const dailyPath = `daily/${getCurrentDatePath('daily')}`;
-    await db.ref(dailyPath).push(entry);
+    await db.ref(`monthly/${getCurrentDatePath('monthly')}`).push(entry);
+    await db.ref(`daily/${getCurrentDatePath('daily')}`).push(entry);
 }
 
 async function fetchLeaderboard(type, limit = 10) {
@@ -277,7 +305,6 @@ async function fetchLeaderboard(type, limit = 10) {
     snapshot.forEach((child) => {
         entries.push({ ...child.val(), id: child.key });
     });
-    // Sort by score descending, limit to top
     entries.sort((a, b) => b.score - a.score);
     return entries.slice(0, limit);
 }
@@ -291,7 +318,6 @@ function displayLeaderboard(entries, type) {
     leaderboardDisplay.innerHTML = html;
 }
 
-// Tab switching
 tabButtons.forEach(btn => {
     btn.addEventListener('click', async () => {
         tabButtons.forEach(b => b.classList.remove('active'));
@@ -302,9 +328,10 @@ tabButtons.forEach(btn => {
     });
 });
 
-// End game - Update local high score and submit to leaderboards
 async function endGame() {
     isPlaying = false;
+    isPaused = false;
+    pauseBtn.textContent = 'Pause';
     finalScoreDisplay.textContent = score;
     if (score > highScore) {
         highScore = score;
@@ -312,13 +339,11 @@ async function endGame() {
         localStorage.setItem('flappyAccounts', JSON.stringify(accounts));
         highScoreDisplay.textContent = highScore;
         highScoreEndDisplay.textContent = highScore;
-        // Submit to leaderboards
         await submitScoreToLeaderboard(score, currentUser);
     }
     gameOverScreen.classList.remove('hidden');
     cancelAnimationFrame(animationFrameId);
 
-    // Load initial global leaderboard
     const globalEntries = await fetchLeaderboard('global');
     displayLeaderboard(globalEntries, 'global');
 }
