@@ -7,7 +7,8 @@
 body {
     font-family: 'Press Start 2P', cursive;
     overflow: hidden;
-    background: #000;
+    background: linear-gradient(135deg, #1e1e2f, #2a4066);
+    touch-action: manipulation;
 }
 
 #game-container {
@@ -28,12 +29,15 @@ body {
     left: 50%;
     transform: translate(-50%, -50%);
     text-align: center;
-    background: rgba(255, 255, 255, 0.95);
-    padding: 30px;
+    background: linear-gradient(145deg, #2a2a3a, #1e1e2f);
+    padding: 2rem;
     border-radius: 15px;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-    color: #333;
-    animation: popIn 0.3s ease-out;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.5), 0 0 40px rgba(0, 255, 255, 0.2);
+    color: #fff;
+    animation: popIn 0.5s ease-out;
+    max-width: 90%;
+    width: 400px;
+    border: 3px solid #00ffff;
 }
 
 .hidden {
@@ -41,54 +45,95 @@ body {
 }
 
 h1 {
-    font-size: 36px;
-    margin-bottom: 20px;
-    color: #ff4500;
-    text-shadow: 2px 2px #fff;
+    font-size: clamp(24px, 5vw, 34px);
+    margin-bottom: 1rem;
+    color: #ff00ff;
+    text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff, 2px 2px #fff;
 }
 
 h3 {
-    font-size: 18px;
-    margin-bottom: 10px;
+    font-size: clamp(14px, 3vw, 16px);
+    margin-bottom: 0.5rem;
+    color: #00ffff;
+    text-shadow: 0 0 5px #00ffff;
 }
 
-button {
-    padding: 12px 24px;
-    font-size: 16px;
+button, #key-input {
+    padding: 0.75rem 1.5rem;
+    font-size: clamp(12px, 2.5vw, 14px);
     font-family: 'Press Start 2P', cursive;
-    background: #ff4500;
-    border: 3px solid #333;
+    background: linear-gradient(145deg, #ff00ff, #cc00cc);
+    border: 3px solid #00ffff;
     border-radius: 8px;
     color: #fff;
     cursor: pointer;
-    margin: 10px;
-    transition: transform 0.2s, background 0.2s;
+    margin: 0.5rem;
+    box-shadow: 0 0 10px #ff00ff;
+    transition: transform 0.2s, box-shadow 0.2s;
 }
 
-button:hover {
-    background: #ff6347;
+button:hover, #key-input:hover {
+    box-shadow: 0 0 20px #ff00ff, 0 0 30px #ff00ff;
     transform: scale(1.05);
 }
 
-.skin-button {
-    background: #4682b4;
+.skin-button, #mouse-button {
+    background: linear-gradient(145deg, #00b7eb, #008bb0);
 }
 
-.skin-button:hover {
-    background: #5f9ea0;
+.skin-button:hover, #mouse-button:hover {
+    box-shadow: 0 0 20px #00b7eb, 0 0 30px #00b7eb;
+}
+
+#key-input {
+    background: #2a2a3a;
+    color: #fff;
+    border: 3px solid #00ffff;
+    text-align: center;
+}
+
+#control-display {
+    font-size: clamp(12px, 2.5vw, 14px);
+    color: #00ffff;
+    text-shadow: 0 0 5px #00ffff;
+}
+
+#skin-preview {
+    width: 68px;
+    height: 48px;
+    margin-bottom: 1rem;
+    border: 2px solid #00ffff;
+    border-radius: 5px;
+    box-shadow: 0 0 10px #00ffff;
 }
 
 #score-display {
     position: absolute;
-    top: 20px;
-    left: 20px;
-    font-size: 24px;
+    top: 1rem;
+    left: 1rem;
+    font-size: clamp(16px, 3vw, 22px);
     color: #fff;
-    text-shadow: 2px 2px #000;
+    text-shadow: 0 0 10px #ff00ff, 2px 2px #000;
     z-index: 10;
 }
 
 @keyframes popIn {
-    0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+    0% { transform: translate(-50%, -50%) scale(0.7); opacity: 0; }
+    80% { transform: translate(-50%, -50%) scale(1.05); opacity: 1; }
     100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
+@media (max-width: 600px) {
+    #start-screen, #game-over-screen, #pause-screen {
+        padding: 1rem;
+        width: 85%;
+    }
+    button, #key-input {
+        padding: 0.5rem 1rem;
+        margin: 0.3rem;
+    }
+    #skin-preview {
+        width: 50px;
+        height: 35px;
+    }
 }
