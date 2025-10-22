@@ -13,15 +13,13 @@
     <div class="container">
         <div id="menu" class="menu hidden">
             <h1>Flappy Birds</h1>
-            <div id="account-section">
-                <h3 id="account-title">Login</h3>
-                <form id="account-form">
+            <div id="username-section">
+                <h3>Enter Your Username</h3>
+                <form id="username-form">
                     <input type="text" id="username" placeholder="Username" required>
-                    <input type="password" id="password" placeholder="Password" required>
-                    <button type="submit" id="account-btn">Login</button>
-                    <button type="button" id="toggle-form">Create Account</button>
+                    <button type="submit" id="username-btn">Set Username</button>
                 </form>
-                <p id="account-error" class="error hidden"></p>
+                <p id="username-error" class="error hidden"></p>
             </div>
             <div id="game-menu" class="hidden">
                 <h3>Choose Your Bird</h3>
@@ -31,7 +29,6 @@
                     <button class="character-btn" data-bird="owl">Owl</button>
                 </div>
                 <button id="start-btn">Start Game</button>
-                <button id="logout-btn">Logout</button>
             </div>
         </div>
         <div id="game-ui" class="hidden">
