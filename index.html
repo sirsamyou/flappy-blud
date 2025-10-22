@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Flappy Blud</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
@@ -14,8 +14,15 @@
             <h1>Flappy Blud</h1>
             <div id="skin-selector">
                 <h3>Select Skin</h3>
+                <img id="skin-preview" src="assets/bird1.png" alt="Skin Preview">
                 <button class="skin-button" data-skin="bird1.png">Bird 1</button>
                 <button class="skin-button" data-skin="bird2.png">Bird 2</button>
+            </div>
+            <div id="control-selector">
+                <h3>Select Control</h3>
+                <input type="text" id="key-input" placeholder="Press a key..." readonly>
+                <button id="mouse-button">Select Mouse Button</button>
+                <p id="control-display">Current: Space</p>
             </div>
             <button id="start-button">Start Game</button>
         </div>
@@ -24,10 +31,11 @@
             <p>Score: <span id="final-score"></span></p>
             <p>High Score: <span id="high-score"></span></p>
             <button id="restart-button">Restart</button>
+            <button id="menu-button">Back to Menu</button>
         </div>
         <div id="pause-screen" class="hidden">
             <h1>Paused</h1>
-            <p>Press P to Resume</p>
+            <p>Press P to Resume or Tap to Jump</p>
         </div>
         <div id="score-display">Score: <span id="current-score">0</span></div>
     </div>
