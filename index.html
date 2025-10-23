@@ -10,46 +10,40 @@
 <body>
     <!-- MENU -->
     <div id="menu" class="screen">
-        <div class="crt">
-            <h1>FLAPPY BLUD</h1>
-            <p class="subtitle">CHOOSE YOUR FATE</p>
-            <div class="bird-select">
-                <button data-bird="bird1.png"><img src="assets/bird1.png" alt="Bird 1"></button>
-                <button data-bird="bird2.png"><img src="assets/bird2.png" alt="Bird 2"></button>
-            </div>
-            <p class="highscore">HIGH SCORE: <span id="menuHigh">0</span></p>
+        <h1>FLAPPY BLUD</h1>
+        <p>CHOOSE BIRD</p>
+        <div class="bird-select">
+            <button data-bird="bird1.png"><img src="assets/bird1.png" alt="Bird 1"></button>
+            <button data-bird="bird2.png"><img src="assets/bird2.png" alt="Bird 2"></button>
         </div>
+        <p>HIGH SCORE: <span id="menuHigh">0</span></p>
     </div>
 
     <!-- GAME -->
     <div id="game" class="screen hidden">
         <canvas id="canvas"></canvas>
 
-        <!-- CRT Overlay -->
-        <div class="crt"></div>
-
-        <!-- UI Overlay -->
+        <!-- UI -->
         <div id="ui">
             <div id="score">0</div>
-            <div id="highscore">BEST: <span id="bestScore">0</span></div>
-            <button id="pauseBtn" class="ui-btn">PAUSE</button>
-            <button id="restartBtn" class="ui-btn hidden">RESTART</button>
-            <button id="menuBtn" class="ui-btn hidden">MENU</button>
+            <button id="pauseBtn" class="btn">PAUSE</button>
+            <button id="restartBtn" class="btn hidden">RESTART</button>
+            <button id="menuBtn" class="btn hidden">MENU</button>
         </div>
 
-        <!-- PAUSE OVERLAY -->
+        <!-- PAUSE -->
         <div id="pause" class="overlay hidden">
             <h2>PAUSED</h2>
-            <p>Press P or tap to resume</p>
+            <p>PRESS P TO RESUME</p>
         </div>
 
         <!-- GAME OVER -->
         <div id="gameover" class="overlay hidden">
             <h2>GAME OVER</h2>
-            <p id="finalScore">Score: 0</p>
+            <p id="finalScore">SCORE: 0</p>
             <p id="newRecord" class="hidden">NEW RECORD!</p>
-            <button id="restartBtn2" class="ui-btn">RESTART</button>
-            <button id="menuBtn2" class="ui-btn">MENU</button>
+            <button id="restartBtn2" class="btn">RESTART</button>
+            <button id="menuBtn2" class="btn">MENU</button>
         </div>
     </div>
 
