@@ -1,6 +1,6 @@
 /* -------------------------------------------------
    GLOBAL RESET & FONT
-   ------------------------------------------------- */
+ trendy------------------------------------------------- */
 * {
     margin: 0;
     padding: 0;
@@ -82,9 +82,11 @@ body {
 /* Bird selection */
 .bird-select {
     display: flex;
-    gap: 3rem;
+    gap: 1.5rem;
     flex-wrap: wrap;
     justify-content: center;
+    max-width: 90%;
+    padding: 0 1rem;
 }
 
 .bird-select button {
@@ -124,8 +126,8 @@ body {
 }
 
 .bird-select img {
-    width: 90px;
-    height: 90px;
+    width: 80px;
+    height: 80px;
     image-rendering: pixelated;
     display: block;
     filter: drop-shadow(0 0 8px rgba(0,0,0,0.5));
@@ -178,10 +180,10 @@ body {
 }
 
 #pauseBtn {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
     pointer-events: auto;
-    align-self: flex-end;
-    margin-right: 1.5rem;
-    margin-top: -3rem;
     padding: 0.6rem 1rem;
     font-size: 0.9rem;
     background: #fff;
@@ -192,6 +194,7 @@ body {
     box-shadow: 6px 6px 0 #000;
     transition: all 0.15s ease;
     font-weight: bold;
+    z-index: 11;
 }
 
 #pauseBtn:hover {
@@ -295,15 +298,15 @@ body {
 @media (max-width: 768px) {
     #menu h1 { font-size: 2.5rem; }
     #menu p { font-size: 1rem; }
-    .bird-select { gap: 1.5rem; }
-    .bird-select img { width: 70px; height: 70px; }
+    .bird-select { gap: 1rem; }
+    .bird-select img { width: 60px; height: 60px; }
     #liveScore { font-size: 1.4rem; padding: 0.3rem 0.8rem; }
     #uiHighScore { font-size: 1rem; }
     #pauseBtn { 
-        margin-top: -2.5rem; 
+        top: 1rem;
+        right: 1rem;
         padding: 0.5rem 0.9rem; 
         font-size: 0.8rem; 
-        margin-right: 1rem;
     }
     #paused { font-size: 2rem; }
     #gameover h2 { font-size: 2.2rem; }
