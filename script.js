@@ -5,15 +5,14 @@ const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const menu = document.getElementById('menu');
 const game = document.getElementById('game');
-const uiScore = document.getElementById('score');
-const restartBtn = document.getElementById('restartBtn');
-const menuBtn = document.getElementById('menuBtn');
+const pauseBtn = document.getElementById('pauseBtn');
 const gameover = document.getElementById('gameover');
 const finalScore = document.getElementById('finalScore');
+const highScoreEl = document.getElementById('highScore');
 const restartBtn2 = document.getElementById('restartBtn2');
 const menuBtn2 = document.getElementById('menuBtn2');
 
-let bird, pipes = [], score = 0, gameRunning = false;
+let bird, pipes = [], score = 0, highScore = 0, gameRunning = false, isPaused = false;
 const gravity = 0.6, jump = -10;
 let frames = 0, lastPipe = 0;
 
@@ -29,8 +28,16 @@ function preloadBirds() {
     });
 }
 
+// Load high score
+function loadHighScore() {
+    const saved = localStorage.getItem('flappyHighScore');
+    highScore = saved ? parseInt(saved) : 0;
+    highScoreEl.textContent = `High Score: ${highScore}`;
+}
+loadHighScore();
+
 // -------------------------------------------------
-// Resize canvas to fill window
+// Resize canvas
 // -------------------------------------------------
 function resize() {
     canvas.width = window.innerWidth;
@@ -44,13 +51,14 @@ resize();
 // -------------------------------------------------
 class Bird {
     constructor(src) {
-        this.img = birdImages[src]; // Use preloaded image
+        this.img = birdImages[src];
         this.w = 60; this.h = 44;
         this.x = canvas.width * 0.2;
         this.y = canvas.height / 2;
         this.vel = 0;
     }
     update() {
+        if (isPaused) return;
         this.vel += gravity;
         this.y += this.vel;
         if (this.y + this.h > canvas.height || this.y < -this.h) this.die();
@@ -58,7 +66,6 @@ class Bird {
     draw() {
         ctx.save();
         ctx.translate(this.x, this.y);
-        // Simple flap animation using rotation
         const rot = Math.min(this.vel * 0.05, Math.PI / 3);
         ctx.rotate(rot);
         ctx.drawImage(this.img, -this.w/2, -this.h/2, this.w, this.h);
@@ -82,6 +89,7 @@ class Pipe {
         this.passed = false;
     }
     update() {
+        if (isPaused) return;
         this.x -= this.speed;
         if (this.x + this.w < 0) {
             pipes = pipes.filter(p => p !== this);
@@ -89,7 +97,11 @@ class Pipe {
         if (!this.passed && this.x + this.w < bird.x) {
             this.passed = true;
             score++;
-            uiScore.textContent = score;
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('flappyHighScore', highScore);
+                highScoreEl.textContent = `High Score: ${highScore}`;
+            }
         }
     }
     draw() {
@@ -121,7 +133,10 @@ class Pipe {
 // Game loop
 // -------------------------------------------------
 function loop() {
-    if (!gameRunning) return;
+    if (!gameRunning || isPaused) {
+        if (gameRunning && isPaused) requestAnimationFrame(loop);
+        return;
+    }
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -158,10 +173,10 @@ function loop() {
 // Input
 // -------------------------------------------------
 function flap(e) {
-    if (!gameRunning) return;
+    if (!gameRunning || isPaused) return;
     if (e.type === 'keydown' && e.code !== 'Space') return;
     if (e.type === 'mousedown' || e.type === 'touchstart') {
-        if (e.target.closest('.ui-btn')) return; // don't flap on buttons
+        if (e.target.closest('.ui-btn')) return;
     }
     bird.flap();
     e.preventDefault();
@@ -170,6 +185,34 @@ function flap(e) {
 canvas.addEventListener('mousedown', flap);
 canvas.addEventListener('touchstart', flap);
 document.addEventListener('keydown', flap);
+
+// -------------------------------------------------
+// Pause System
+// -------------------------------------------------
+let pausedOverlay = null;
+
+function togglePause() {
+    if (!gameRunning) return;
+    isPaused = !isPaused;
+    pauseBtn.textContent = isPaused ? 'RESUME' : 'PAUSE';
+
+    if (isPaused) {
+        // Create paused overlay
+        pausedOverlay = document.createElement('div');
+        pausedOverlay.id = 'paused';
+        pausedOverlay.textContent = 'PAUSED';
+        document.body.appendChild(pausedOverlay);
+    } else {
+        // Remove paused overlay
+        if (pausedOverlay) {
+            pausedOverlay.remove();
+            pausedOverlay = null;
+        }
+        loop(); // Resume loop
+    }
+}
+
+pauseBtn.addEventListener('click', togglePause);
 
 // -------------------------------------------------
 // Start / Restart / Menu
@@ -181,14 +224,19 @@ function startGame(birdSrc) {
     menu.classList.add('hidden');
     game.classList.remove('hidden');
     gameover.classList.add('hidden');
-    restartBtn.classList.add('hidden');
-    menuBtn.classList.add('hidden');
+
+    // Reset UI
+    isPaused = false;
+    pauseBtn.textContent = 'PAUSE';
+    if (pausedOverlay) {
+        pausedOverlay.remove();
+        pausedOverlay = null;
+    }
 
     // Reset game state
     bird = new Bird(currentBird);
     pipes = [];
     score = 0;
-    uiScore.textContent = '0';
     frames = 0;
     lastPipe = -100;
     gameRunning = true;
@@ -198,18 +246,16 @@ function startGame(birdSrc) {
 function endGame() {
     gameRunning = false;
     finalScore.textContent = `Score: ${score}`;
+    highScoreEl.textContent = `High Score: ${highScore}`;
     gameover.classList.remove('hidden');
-    restartBtn.classList.remove('hidden');
-    menuBtn.classList.remove('hidden');
 }
 
 // -------------------------------------------------
-// Bird selection (now works!)
+// Bird selection
 // -------------------------------------------------
 document.querySelectorAll('.bird-select button').forEach(btn => {
     btn.addEventListener('click', () => {
         const src = btn.dataset.bird;
-        // Optional: add visual feedback
         document.querySelectorAll('.bird-select button').forEach(b => b.classList.remove('selected'));
         btn.classList.add('selected');
         startGame(src);
@@ -217,8 +263,6 @@ document.querySelectorAll('.bird-select button').forEach(btn => {
 });
 
 // UI Buttons
-restartBtn.onclick = () => startGame(currentBird);
-menuBtn.onclick = () => goToMenu();
 restartBtn2.onclick = () => startGame(currentBird);
 menuBtn2.onclick = () => goToMenu();
 
@@ -226,15 +270,17 @@ function goToMenu() {
     game.classList.add('hidden');
     menu.classList.remove('hidden');
     gameRunning = false;
+    isPaused = false;
+    if (pausedOverlay) {
+        pausedOverlay.remove();
+        pausedOverlay = null;
+    }
 }
 
 // -------------------------------------------------
-// Preload birds and show menu
+// Preload & Init
 // -------------------------------------------------
 window.addEventListener('load', () => {
     preloadBirds();
-    // Wait a tick to ensure images start loading
-    setTimeout(() => {
-        // Menu is already visible
-    }, 100);
+    setTimeout(() => {}, 100);
 });
