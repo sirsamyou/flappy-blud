@@ -11,6 +11,8 @@ const finalScore = document.getElementById('finalScore');
 const highScoreEl = document.getElementById('highScore');
 const restartBtn2 = document.getElementById('restartBtn2');
 const menuBtn2 = document.getElementById('menuBtn2');
+const liveScore = document.getElementById('liveScore');
+const uiHighScore = document.getElementById('uiHighScore');
 
 let bird, pipes = [], score = 0, highScore = 0, gameRunning = false, isPaused = false;
 const gravity = 0.6, jump = -10;
@@ -32,6 +34,7 @@ function preloadBirds() {
 function loadHighScore() {
     const saved = localStorage.getItem('flappyHighScore');
     highScore = saved ? parseInt(saved) : 0;
+    uiHighScore.textContent = `BEST: ${highScore}`;
     highScoreEl.textContent = `High Score: ${highScore}`;
 }
 loadHighScore();
@@ -58,7 +61,7 @@ class Bird {
         this.vel = 0;
     }
     update() {
-        if (isPaused) return;
+        if (isPaused || !gameRunning) return;
         this.vel += gravity;
         this.y += this.vel;
         if (this.y + this.h > canvas.height || this.y < -this.h) this.die();
@@ -89,7 +92,7 @@ class Pipe {
         this.passed = false;
     }
     update() {
-        if (isPaused) return;
+        if (isPaused || !gameRunning) return;
         this.x -= this.speed;
         if (this.x + this.w < 0) {
             pipes = pipes.filter(p => p !== this);
@@ -97,9 +100,11 @@ class Pipe {
         if (!this.passed && this.x + this.w < bird.x) {
             this.passed = true;
             score++;
+            liveScore.textContent = score;
             if (score > highScore) {
                 highScore = score;
                 localStorage.setItem('flappyHighScore', highScore);
+                uiHighScore.textContent = `BEST: ${highScore}`;
                 highScoreEl.textContent = `High Score: ${highScore}`;
             }
         }
@@ -107,13 +112,10 @@ class Pipe {
     draw() {
         const pipeColor = '#2d5016';
         const capColor = '#1e3a0d';
-        // Top pipe
         ctx.fillStyle = pipeColor;
         ctx.fillRect(this.x, 0, this.w, this.top);
         ctx.fillStyle = capColor;
         ctx.fillRect(this.x - 10, this.top - 40, this.w + 20, 40);
-
-        // Bottom pipe
         ctx.fillStyle = pipeColor;
         ctx.fillRect(this.x, this.bottom, this.w, canvas.height - this.bottom);
         ctx.fillStyle = capColor;
@@ -140,24 +142,20 @@ function loop() {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Sky gradient
     const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
     grad.addColorStop(0, '#87CEEB');
     grad.addColorStop(1, '#E0F7FA');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Update & draw bird
     bird.update();
     bird.draw();
 
-    // Spawn pipes
     if (frames - lastPipe > 90) {
         pipes.push(new Pipe());
         lastPipe = frames;
     }
 
-    // Update & draw pipes
     for (let i = pipes.length - 1; i >= 0; i--) {
         const p = pipes[i];
         p.update();
@@ -197,18 +195,16 @@ function togglePause() {
     pauseBtn.textContent = isPaused ? 'RESUME' : 'PAUSE';
 
     if (isPaused) {
-        // Create paused overlay
         pausedOverlay = document.createElement('div');
         pausedOverlay.id = 'paused';
         pausedOverlay.textContent = 'PAUSED';
         document.body.appendChild(pausedOverlay);
     } else {
-        // Remove paused overlay
         if (pausedOverlay) {
             pausedOverlay.remove();
             pausedOverlay = null;
         }
-        loop(); // Resume loop
+        requestAnimationFrame(loop);
     }
 }
 
@@ -233,14 +229,15 @@ function startGame(birdSrc) {
         pausedOverlay = null;
     }
 
-    // Reset game state
+    // Reset game
     bird = new Bird(currentBird);
     pipes = [];
     score = 0;
+    liveScore.textContent = '0';
     frames = 0;
     lastPipe = -100;
     gameRunning = true;
-    loop();
+    requestAnimationFrame(loop);
 }
 
 function endGame() {
@@ -248,6 +245,18 @@ function endGame() {
     finalScore.textContent = `Score: ${score}`;
     highScoreEl.textContent = `High Score: ${highScore}`;
     gameover.classList.remove('hidden');
+}
+
+function goToMenu() {
+    game.classList.add('hidden');
+    menu.classList.remove('hidden');
+    gameover.classList.add('hidden'); // FIXED: Hide gameover
+    gameRunning = false;
+    isPaused = false;
+    if (pausedOverlay) {
+        pausedOverlay.remove();
+        pausedOverlay = null;
+    }
 }
 
 // -------------------------------------------------
@@ -264,18 +273,7 @@ document.querySelectorAll('.bird-select button').forEach(btn => {
 
 // UI Buttons
 restartBtn2.onclick = () => startGame(currentBird);
-menuBtn2.onclick = () => goToMenu();
-
-function goToMenu() {
-    game.classList.add('hidden');
-    menu.classList.remove('hidden');
-    gameRunning = false;
-    isPaused = false;
-    if (pausedOverlay) {
-        pausedOverlay.remove();
-        pausedOverlay = null;
-    }
-}
+menuBtn2.onclick = goToMenu;
 
 // -------------------------------------------------
 // Preload & Init
