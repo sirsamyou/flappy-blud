@@ -13,6 +13,10 @@
   <div id="menu" class="screen">
     <h1>FLAPPY BIRD</h1>
     <p>Choose your bird!</p>
+    <div id="menuStats">
+      <div id="menuHighScore">HIGH: 0</div>
+      <div id="menuBalance">COINS: 0</div>
+    </div>
     <div class="bird-select">
       <button data-bird="bird1.png"><img src="assets/bird1.png" alt="Bird 1"></button>
       <button data-bird="bird2.png"><img src="assets/bird2.png" alt="Bird 2"></button>
@@ -29,16 +33,17 @@
   <div id="game" class="screen hidden">
     <canvas id="canvas"></canvas>
 
-    <!-- UI: Live Score + High Score (Top-Left) -->
+    <!-- UI: Score + High Score + Coins -->
     <div id="ui">
       <div id="liveScore">0</div>
       <div id="uiHighScore">BEST: 0</div>
+      <div id="uiBalance">COINS: 0</div>
     </div>
 
-    <!-- Pause Button (Top-Right) -->
+    <!-- Pause Button -->
     <button id="pauseBtn" class="ui-btn">PAUSE</button>
 
-    <!-- Countdown Overlay (3..2..1) -->
+    <!-- Countdown -->
     <div id="countdown" class="hidden"></div>
   </div>
 
@@ -47,6 +52,7 @@
     <h2>GAME OVER</h2>
     <p id="finalScore">Score: 0</p>
     <p id="highScore">High Score: 0</p>
+    <p id="finalBalance">Coins: 0</p>
     <div>
       <button id="restartBtn2" class="ui-btn">RESTART</button>
       <button id="menuBtn2" class="ui-btn">MENU</button>
