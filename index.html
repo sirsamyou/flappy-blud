@@ -2,43 +2,42 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flappy Blud</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div id="game-container">
-        <canvas id="gameCanvas"></canvas>
-        <div id="start-screen">
-            <h1>Flappy Blud</h1>
-            <div id="skin-selector">
-                <h3>Select Skin</h3>
-                <img id="skin-preview" src="assets/bird1.png" alt="Skin Preview">
-                <button class="skin-button" data-skin="bird1.png">Bird 1</button>
-                <button class="skin-button" data-skin="bird2.png">Bird 2</button>
-            </div>
-            <div id="control-selector">
-                <h3>Select Control</h3>
-                <input type="text" id="key-input" placeholder="Press a key..." readonly>
-                <button id="mouse-button">Select Mouse Button</button>
-                <p id="control-display">Current: Space</p>
-            </div>
-            <button id="start-button">Start Game</button>
+    <!-- MENU -->
+    <div id="menu" class="screen">
+        <h1>Flappy Blud</h1>
+        <p>Choose your bird:</p>
+        <div class="bird-select">
+            <button data-bird="bird1.png"><img src="assets/bird1.png" alt="Bird 1"></button>
+            <button data-bird="bird2.png"><img src="assets/bird2.png" alt="Bird 2"></button>
         </div>
-        <div id="game-over-screen" class="hidden">
-            <h1>Game Over</h1>
-            <p>Score: <span id="final-score"></span></p>
-            <p>High Score: <span id="high-score"></span></p>
-            <button id="restart-button">Restart</button>
-            <button id="menu-button">Back to Menu</button>
-        </div>
-        <div id="pause-screen" class="hidden">
-            <h1>Paused</h1>
-            <p>Press P to Resume or Tap to Jump</p>
-        </div>
-        <div id="score-display">Score: <span id="current-score">0</span></div>
     </div>
+
+    <!-- GAME -->
+    <div id="game" class="screen hidden">
+        <canvas id="canvas"></canvas>
+
+        <!-- UI overlay -->
+        <div id="ui">
+            <div id="score">0</div>
+            <button id="restartBtn" class="ui-btn hidden">RESTART</button>
+            <button id="menuBtn" class="ui-btn hidden">MENU</button>
+        </div>
+
+        <!-- GAME OVER -->
+        <div id="gameover" class="overlay hidden">
+            <h2>GAME OVER</h2>
+            <p id="finalScore">Score: 0</p>
+            <button id="restartBtn2" class="ui-btn">RESTART</button>
+            <button id="menuBtn2" class="ui-btn">MENU</button>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>
