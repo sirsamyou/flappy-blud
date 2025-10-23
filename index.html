@@ -23,10 +23,14 @@
   <div id="game" class="screen hidden">
     <canvas id="canvas"></canvas>
 
-    <!-- UI Overlay: Pause Button -->
+    <!-- UI: Live Score + High Score (Top-Left) -->
     <div id="ui">
-      <button id="pauseBtn" class="ui-btn">PAUSE</button>
+      <div id="liveScore">0</div>
+      <div id="uiHighScore">BEST: 0</div>
     </div>
+
+    <!-- Pause Button (Top-Right) -->
+    <button id="pauseBtn" class="ui-btn">PAUSE</button>
   </div>
 
   <!-- GAME OVER SCREEN -->
