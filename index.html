@@ -10,40 +10,31 @@
 <body>
     <!-- MENU -->
     <div id="menu" class="screen">
-        <h1>FLAPPY BLUD</h1>
-        <p>CHOOSE BIRD</p>
+        <h1>Flappy Blud</h1>
+        <p>Choose your bird:</p>
         <div class="bird-select">
             <button data-bird="bird1.png"><img src="assets/bird1.png" alt="Bird 1"></button>
             <button data-bird="bird2.png"><img src="assets/bird2.png" alt="Bird 2"></button>
         </div>
-        <p>HIGH SCORE: <span id="menuHigh">0</span></p>
     </div>
 
     <!-- GAME -->
     <div id="game" class="screen hidden">
         <canvas id="canvas"></canvas>
 
-        <!-- UI -->
+        <!-- UI overlay -->
         <div id="ui">
             <div id="score">0</div>
-            <button id="pauseBtn" class="btn">PAUSE</button>
-            <button id="restartBtn" class="btn hidden">RESTART</button>
-            <button id="menuBtn" class="btn hidden">MENU</button>
-        </div>
-
-        <!-- PAUSE -->
-        <div id="pause" class="overlay hidden">
-            <h2>PAUSED</h2>
-            <p>PRESS P TO RESUME</p>
+            <button id="restartBtn" class="ui-btn hidden">RESTART</button>
+            <button id="menuBtn" class="ui-btn hidden">MENU</button>
         </div>
 
         <!-- GAME OVER -->
         <div id="gameover" class="overlay hidden">
             <h2>GAME OVER</h2>
-            <p id="finalScore">SCORE: 0</p>
-            <p id="newRecord" class="hidden">NEW RECORD!</p>
-            <button id="restartBtn2" class="btn">RESTART</button>
-            <button id="menuBtn2" class="btn">MENU</button>
+            <p id="finalScore">Score: 0</p>
+            <button id="restartBtn2" class="ui-btn">RESTART</button>
+            <button id="menuBtn2" class="ui-btn">MENU</button>
         </div>
     </div>
 
