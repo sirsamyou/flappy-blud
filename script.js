@@ -18,13 +18,17 @@ let bird, pipes = [], score = 0, highScore = 0, gameRunning = false, isPaused = 
 const gravity = 0.6, jump = -10;
 let frames = 0, lastPipe = 0;
 
-// Preload bird images
+// Preload all 8 bird images
 const birdImages = {};
-const birdOptions = ['bird1.png', 'bird2.png'];
+const birdOptions = [
+    'bird1.png', 'bird2.png', 'bird3.png', 'bird4.png',
+    'bird5.png', 'bird6.png', 'bird7.png', 'bird8.png'
+];
 
 function preloadBirds() {
     birdOptions.forEach(src => {
         const img = new Image();
+        img.onload = () => { /* Optional: show loading */ };
         img.src = 'assets/' + src;
         birdImages[src] = img;
     });
@@ -221,7 +225,6 @@ function startGame(birdSrc) {
     game.classList.remove('hidden');
     gameover.classList.add('hidden');
 
-    // Reset UI
     isPaused = false;
     pauseBtn.textContent = 'PAUSE';
     if (pausedOverlay) {
@@ -229,7 +232,6 @@ function startGame(birdSrc) {
         pausedOverlay = null;
     }
 
-    // Reset game
     bird = new Bird(currentBird);
     pipes = [];
     score = 0;
@@ -250,7 +252,7 @@ function endGame() {
 function goToMenu() {
     game.classList.add('hidden');
     menu.classList.remove('hidden');
-    gameover.classList.add('hidden'); // FIXED: Hide gameover
+    gameover.classList.add('hidden');
     gameRunning = false;
     isPaused = false;
     if (pausedOverlay) {
@@ -260,13 +262,21 @@ function goToMenu() {
 }
 
 // -------------------------------------------------
-// Bird selection
+// Bird selection - FIXED & EXPANDED
 // -------------------------------------------------
 document.querySelectorAll('.bird-select button').forEach(btn => {
     btn.addEventListener('click', () => {
         const src = btn.dataset.bird;
-        document.querySelectorAll('.bird-select button').forEach(b => b.classList.remove('selected'));
+
+        // Remove 'selected' from all
+        document.querySelectorAll('.bird-select button').forEach(b => {
+            b.classList.remove('selected');
+        });
+
+        // Add to clicked
         btn.classList.add('selected');
+
+        // Start game
         startGame(src);
     });
 });
@@ -280,5 +290,4 @@ menuBtn2.onclick = goToMenu;
 // -------------------------------------------------
 window.addEventListener('load', () => {
     preloadBirds();
-    setTimeout(() => {}, 100);
 });
