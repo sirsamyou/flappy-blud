@@ -13,6 +13,7 @@ const restartBtn2 = document.getElementById('restartBtn2');
 const menuBtn2 = document.getElementById('menuBtn2');
 const liveScore = document.getElementById('liveScore');
 const uiHighScore = document.getElementById('uiHighScore');
+const countdownEl = document.getElementById('countdown');
 
 let bird, pipes = [], score = 0, highScore = 0, gameRunning = false, isPaused = false;
 const gravity = 0.6, jump = -10;
@@ -28,7 +29,6 @@ const birdOptions = [
 function preloadBirds() {
     birdOptions.forEach(src => {
         const img = new Image();
-        img.onload = () => { /* Optional: show loading */ };
         img.src = 'assets/' + src;
         birdImages[src] = img;
     });
@@ -54,12 +54,12 @@ window.addEventListener('resize', resize);
 resize();
 
 // -------------------------------------------------
-// Bird object
+// Bird object — SAME HITBOX FOR ALL
 // -------------------------------------------------
 class Bird {
     constructor(src) {
         this.img = birdImages[src];
-        this.w = 60; this.h = 44;
+        this.w = 60; this.h = 44;  // FIXED HITBOX
         this.x = canvas.width * 0.2;
         this.y = canvas.height / 2;
         this.vel = 0;
@@ -178,7 +178,7 @@ function flap(e) {
     if (!gameRunning || isPaused) return;
     if (e.type === 'keydown' && e.code !== 'Space') return;
     if (e.type === 'mousedown' || e.type === 'touchstart') {
-        if (e.target.closest('.ui-btn')) return;
+        if (e.target.closest('.ui-btn') && !isPaused) return;
     }
     bird.flap();
     e.preventDefault();
@@ -189,28 +189,65 @@ canvas.addEventListener('touchstart', flap);
 document.addEventListener('keydown', flap);
 
 // -------------------------------------------------
-// Pause System
+// Pause System + 3-2-1 Countdown
 // -------------------------------------------------
 let pausedOverlay = null;
+let countdownActive = false;
 
 function togglePause() {
-    if (!gameRunning) return;
+    if (!gameRunning || countdownActive) return;
     isPaused = !isPaused;
     pauseBtn.textContent = isPaused ? 'RESUME' : 'PAUSE';
 
     if (isPaused) {
         pausedOverlay = document.createElement('div');
         pausedOverlay.id = 'paused';
-        pausedOverlay.textContent = 'PAUSED';
+        pausedOverlay.innerHTML = 'PAUSED<br><small>Tap to resume</small>';
         document.body.appendChild(pausedOverlay);
     } else {
-        if (pausedOverlay) {
-            pausedOverlay.remove();
-            pausedOverlay = null;
-        }
-        requestAnimationFrame(loop);
+        startCountdown();
     }
 }
+
+function startCountdown() {
+    if (!isPaused) return;
+    countdownActive = true;
+    isPaused = false;
+    pauseBtn.textContent = 'PAUSE';
+
+    if (pausedOverlay) {
+        pausedOverlay.remove();
+        pausedOverlay = null;
+    }
+
+    let count = 3;
+    countdownEl.classList.remove('hidden');
+    countdownEl.textContent = count;
+
+    const interval = setInterval(() => {
+        count--;
+        if (count > 0) {
+            countdownEl.textContent = count;
+        } else {
+            countdownEl.classList.add('hidden');
+            countdownActive = false;
+            requestAnimationFrame(loop);
+            clearInterval(interval);
+        }
+    }, 800);
+}
+
+// Tap anywhere to resume when paused
+canvas.addEventListener('mousedown', (e) => {
+    if (isPaused && !countdownActive && !e.target.closest('#pauseBtn')) {
+        startCountdown();
+    }
+});
+canvas.addEventListener('touchstart', (e) => {
+    if (isPaused && !countdownActive && !e.target.closest('#pauseBtn')) {
+        startCountdown();
+    }
+});
 
 pauseBtn.addEventListener('click', togglePause);
 
@@ -226,7 +263,9 @@ function startGame(birdSrc) {
     gameover.classList.add('hidden');
 
     isPaused = false;
+    countdownActive = false;
     pauseBtn.textContent = 'PAUSE';
+    countdownEl.classList.add('hidden');
     if (pausedOverlay) {
         pausedOverlay.remove();
         pausedOverlay = null;
@@ -255,33 +294,26 @@ function goToMenu() {
     gameover.classList.add('hidden');
     gameRunning = false;
     isPaused = false;
+    countdownActive = false;
     if (pausedOverlay) {
         pausedOverlay.remove();
         pausedOverlay = null;
     }
+    countdownEl.classList.add('hidden');
 }
 
 // -------------------------------------------------
-// Bird selection - FIXED & EXPANDED
+// Bird selection
 // -------------------------------------------------
 document.querySelectorAll('.bird-select button').forEach(btn => {
     btn.addEventListener('click', () => {
         const src = btn.dataset.bird;
-
-        // Remove 'selected' from all
-        document.querySelectorAll('.bird-select button').forEach(b => {
-            b.classList.remove('selected');
-        });
-
-        // Add to clicked
+        document.querySelectorAll('.bird-select button').forEach(b => b.classList.remove('selected'));
         btn.classList.add('selected');
-
-        // Start game
         startGame(src);
     });
 });
 
-// UI Buttons
 restartBtn2.onclick = () => startGame(currentBird);
 menuBtn2.onclick = goToMenu;
 
