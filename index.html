@@ -1,43 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flappy Blud</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Flappy Bird</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <!-- MENU -->
-    <div id="menu" class="screen">
-        <h1>Flappy Blud</h1>
-        <p>Choose your bird:</p>
-        <div class="bird-select">
-            <button data-bird="bird1.png"><img src="assets/bird1.png" alt="Bird 1"></button>
-            <button data-bird="bird2.png"><img src="assets/bird2.png" alt="Bird 2"></button>
-        </div>
+
+  <!-- MENU SCREEN -->
+  <div id="menu" class="screen">
+    <h1>FLAPPY BIRD</h1>
+    <p>Choose your bird!</p>
+    <div class="bird-select">
+      <button data-bird="bird1.png"><img src="assets/bird1.png" alt="Bird 1"></button>
+      <button data-bird="bird2.png"><img src="assets/bird2.png" alt="Bird 2"></button>
     </div>
+  </div>
 
-    <!-- GAME -->
-    <div id="game" class="screen hidden">
-        <canvas id="canvas"></canvas>
+  <!-- GAME SCREEN -->
+  <div id="game" class="screen hidden">
+    <canvas id="canvas"></canvas>
 
-        <!-- UI overlay -->
-        <div id="ui">
-            <div id="score">0</div>
-            <button id="restartBtn" class="ui-btn hidden">RESTART</button>
-            <button id="menuBtn" class="ui-btn hidden">MENU</button>
-        </div>
-
-        <!-- GAME OVER -->
-        <div id="gameover" class="overlay hidden">
-            <h2>GAME OVER</h2>
-            <p id="finalScore">Score: 0</p>
-            <button id="restartBtn2" class="ui-btn">RESTART</button>
-            <button id="menuBtn2" class="ui-btn">MENU</button>
-        </div>
+    <!-- UI Overlay: Pause Button -->
+    <div id="ui">
+      <button id="pauseBtn" class="ui-btn">PAUSE</button>
     </div>
+  </div>
 
-    <script src="script.js"></script>
+  <!-- GAME OVER SCREEN -->
+  <div id="gameover" class="overlay hidden">
+    <h2>GAME OVER</h2>
+    <p id="finalScore">Score: 0</p>
+    <p id="highScore">High Score: 0</p>
+    <div>
+      <button id="restartBtn2" class="ui-btn">RESTART</button>
+      <button id="menuBtn2" class="ui-btn">MENU</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
 </body>
 </html>
