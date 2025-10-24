@@ -49,11 +49,10 @@ main {
 .screen {
     position: absolute;
     inset: 0;
-    display: grid;
-    grid-template-rows: auto auto 1fr;
-    align-content: start;
-    justify-content: center;
-    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: clamp(0.5rem, 2vw, 1rem);
     width: 100%;
     height: 100%;
     transition: opacity 0.5s ease;
@@ -67,16 +66,16 @@ main {
 #menu {
     background: rgba(10, 26, 46, 0.95);
     backdrop-filter: blur(10px);
-    display: grid;
-    grid-template-rows: 60px auto 1fr;
-    gap: 1rem;
-    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.5rem, 2vw, 1rem);
+    padding: clamp(0.8rem, 3vw, 1.2rem);
     overflow-y: auto;
     scroll-behavior: smooth;
 }
 
 #menu h1#title {
-    font-size: clamp(2.5rem, 8vw, 4rem);
+    font-size: clamp(2rem, 6vw, 3.5rem);
     text-align: center;
     background: linear-gradient(180deg, #fff 0%, var(--accent-gold) 50%, #ffed4e 100%);
     -webkit-background-clip: text;
@@ -85,7 +84,6 @@ main {
     animation: titlePulse 2s infinite alternate;
     cursor: pointer;
     user-select: none;
-    justify-self: center;
 }
 
 @keyframes titlePulse {
@@ -93,16 +91,40 @@ main {
     100% { text-shadow: 7px 7px 0 #000, 0 0 30px rgba(255,215,0,0.7); }
 }
 
+@keyframes titleHold {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.1); }
+}
+
+#secretProgress {
+    text-align: center;
+    font-size: clamp(0.6rem, 1.5vw, 0.8rem);
+    color: #ff00ff;
+    text-shadow: 2px 2px 0 #000;
+}
+
+#secretProgressBar {
+    display: inline-block;
+    height: 10px;
+    width: 0%;
+    background: linear-gradient(90deg, #ff00ff, #cc00cc);
+    border: 2px solid #000;
+    border-radius: 5px;
+    transition: width 0.1s linear;
+}
+
 #menuStats {
     background: rgba(0,0,0,0.85);
     backdrop-filter: blur(8px);
-    padding: 0.8rem;
+    padding: clamp(0.6rem, 2vw, 0.8rem);
     border: 3px solid #000;
     border-radius: var(--radius);
     box-shadow: var(--shadow);
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 0.5rem;
-    max-width: 250px;
+    width: clamp(200px, 50vw, 300px);
+    align-self: center;
 }
 
 #menuHighScore, #menuBalance {
@@ -114,8 +136,7 @@ main {
 
 /* Progress bar */
 .level-progress {
-    display: grid;
-    grid-template-columns: auto 1fr auto;
+    display: flex;
     align-items: center;
     gap: 0.5rem;
     background: rgba(0,0,0,0.7);
@@ -126,12 +147,13 @@ main {
 
 .progress-container {
     position: relative;
-    height: 12px;
+    height: 16px;
     background: rgba(0,0,0,0.8);
     border: 2px solid #333;
     border-radius: 6px;
     overflow: hidden;
-    min-width: 200px;
+    flex: 1;
+    min-width: 150px;
 }
 
 #menuProgressBar {
@@ -140,6 +162,7 @@ main {
     background: linear-gradient(90deg, var(--accent-green), var(--accent-green-dark));
     transition: width 0.5s ease;
     box-shadow: inset 0 0 8px rgba(0,255,136,0.4);
+    position: relative;
 }
 
 #xpText {
@@ -147,9 +170,9 @@ main {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: clamp(0.5rem, 1.2vw, 0.6rem);
-    color: #000;
-    text-shadow: 1px 1px 0 #fff, -1px -1px 0 #fff;
+    font-size: clamp(0.6rem, 1.5vw, 0.8rem);
+    color: #fff;
+    text-shadow: 1px 1px 0 #000;
     font-weight: bold;
     pointer-events: none;
 }
@@ -163,15 +186,16 @@ main {
 
 /* Tabs */
 .menu-tabs {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    display: flex;
     gap: 0.5rem;
     width: 100%;
+    max-width: 600px;
+    justify-content: center;
 }
 
 .tab-btn {
     padding: 0.6rem;
-    font-size: clamp(0.8rem, 2.2vw, 1rem);
+    font-size: clamp(0.8rem, 2vw, 1rem);
     background: linear-gradient(45deg, #fff, #f0f0f0);
     color: #000;
     border: 3px solid #000;
@@ -180,22 +204,25 @@ main {
     box-shadow: var(--shadow);
     transition: all 0.3s ease;
     font-weight: bold;
+    flex: 1;
+    max-width: 150px;
 }
 
 .tab-btn:hover {
-    transform: scale(1.05);
     background: linear-gradient(45deg, #f0f0f0, #fff);
 }
 
 .tab-btn.active {
     background: linear-gradient(45deg, var(--accent-gold), #ffed4e);
-    transform: scale(1.05);
 }
 
 /* Shared screen text */
 #inventoryScreen, #shopScreen, #achievementsScreen {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 1rem;
+    width: 100%;
+    max-width: 600px;
 }
 
 #inventoryScreen p, #shopScreen p, #achievementsScreen p {
@@ -207,7 +234,7 @@ main {
 .btn {
     padding: 0.6rem 1rem;
     font-family: var(--font);
-    font-size: clamp(0.8rem, 2.2vw, 1rem);
+    font-size: clamp(0.8rem, 2vw, 1rem);
     background: linear-gradient(45deg, #fff, #f0f0f0);
     color: #000;
     border: 3px solid #000;
@@ -242,8 +269,8 @@ main {
     border-radius: 10px;
     box-shadow: var(--shadow), 0 0 10px rgba(255,215,0,0.5);
     animation: previewGlow 2s ease-in-out infinite;
-    justify-self: center;
     max-width: 200px;
+    align-self: center;
 }
 
 @keyframes previewGlow {
@@ -261,8 +288,9 @@ main {
 /* Shop */
 .shop-items {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: 0.8rem;
+    width: 100%;
 }
 
 .shop-item {
@@ -282,8 +310,8 @@ main {
 }
 
 .shop-item img {
-    width: 60px;
-    height: 60px;
+    width: clamp(50px, 10vw, 60px);
+    height: clamp(50px, 10vw, 60px);
     margin-bottom: 0.5rem;
     border: 2px solid #fff;
     border-radius: 6px;
@@ -306,6 +334,7 @@ main {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     gap: 0.8rem;
+    width: 100%;
 }
 
 .achievement-item {
@@ -328,7 +357,7 @@ main {
 /* -------------------------------------------------
    GAME UI ELEMENTS
    ------------------------------------------------- */
-#canvas {
+#canvas, #mazeCanvas {
     display: block;
     width: 100%;
     height: 100%;
@@ -340,21 +369,22 @@ main {
 
 #ui {
     position: absolute;
-    top: 1rem;
-    left: 1rem;
-    display: grid;
+    top: clamp(0.5rem, 2vw, 1rem);
+    left: clamp(0.5rem, 2vw, 1rem);
+    display: flex;
+    flex-direction: column;
     gap: 0.4rem;
     z-index: 12;
     pointer-events: none;
 }
 
-#liveScore, #uiHighScore {
+#liveScore, #uiHighScore, #modifierNotification {
     background: rgba(0,0,0,0.85);
     border: 3px solid #000;
     border-radius: var(--radius);
     box-shadow: var(--shadow);
     padding: 0.5rem 0.8rem;
-    font-size: clamp(1rem, 3.5vw, 1.4rem);
+    font-size: clamp(1rem, 3vw, 1.4rem);
     text-shadow: 2px 2px 0 #000;
 }
 
@@ -363,13 +393,21 @@ main {
     color: var(--accent-gold);
 }
 
+#modifierNotification {
+    font-size: clamp(0.8rem, 2vw, 1rem);
+    color: #ff00ff;
+}
+
 /* Pause & Game Over Overlays */
 #pausedOverlay, .overlay {
     position: absolute;
     inset: 0;
     backdrop-filter: blur(10px);
-    display: grid;
-    place-items: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
     z-index: 15;
     color: var(--text-light);
     text-shadow: 4px 4px 0 #000;
@@ -378,29 +416,61 @@ main {
 #pausedOverlay { background: rgba(0,0,0,0.85); }
 .overlay { background: rgba(0,0,0,0.9); }
 
+#secretCutscene h2 {
+    color: #ff00ff;
+    text-shadow: 4px 4px 0 #000, 0 0 20px #ff00ff;
+    animation: gameOverPulse 1.5s infinite;
+}
+
 #gameover h2 {
     color: #ff4444;
     text-shadow: 4px 4px 0 #000, 0 0 20px #ff0000;
     animation: gameOverPulse 1.5s infinite;
 }
 
+.gameover-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: center;
+}
+
+.gameover-buttons {
+    display: flex;
+    gap: 1rem;
+}
+
 @keyframes gameOverPulse {
+    0% { transform: scale(1); }
     50% { transform: scale(1.05); }
+}
+
+/* Maze Screen */
+#mazeScreen {
+    background: rgba(0,0,0,0.95);
+}
+
+#exitMazeBtn {
+    position: absolute;
+    top: clamp(0.5rem, 2vw, 1rem);
+    right: clamp(0.5rem, 2vw, 1rem);
 }
 
 /* -------------------------------------------------
    RESPONSIVE
    ------------------------------------------------- */
 @media (max-width: 768px) {
-    #menu { padding: 0.8rem; grid-template-rows: 50px auto 1fr; }
-    #menuStats { max-width: 220px; padding: 0.6rem; }
-    .shop-item img { width: 45px; height: 45px; }
+    #menu { padding: 0.6rem; }
+    #menuStats { width: clamp(180px, 60vw, 250px); }
+    .shop-item img { width: 50px; height: 50px; }
     .btn { padding: 0.5rem 0.8rem; }
+    .tab-btn { font-size: clamp(0.7rem, 1.8vw, 0.9rem); }
 }
 
 @media (max-width: 480px) {
-    #menuStats { max-width: 180px; }
-    .shop-item img { width: 70px; height: 70px; }
+    #menuStats { width: clamp(150px, 70vw, 200px); }
+    .shop-item img { width: 45px; height: 45px; }
+    .bird-preview { max-width: 150px; }
 }
 
 /* -------------------------------------------------
