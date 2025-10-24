@@ -11,23 +11,25 @@
   <main>
     <!-- MENU SCREEN -->
     <div id="menu" class="screen">
-      <div id="menuStats">
-        <div class="stat-group">
+      <div id="menuTopLeft">
+        <div class="stat-box">
           <div id="menuHighScore">HIGH: 0</div>
+        </div>
+        <div class="stat-box">
           <div id="menuBalance">COINS: 0</div>
         </div>
-        <div class="level-progress">
-          <span id="currentLevel">LVL 1</span>
+        <div class="level-box">
+          <div id="levelNumber">1</div>
           <div class="progress-container">
-            <div id="menuProgressBar">
-              <span id="xpText">0/40</span>
-            </div>
+            <div id="menuProgressBar"></div>
+            <span id="xpText">0/40</span>
           </div>
-          <span id="nextLevel">LVL 2</span>
         </div>
       </div>
       <h1 id="title">FLAPPY BLUD</h1>
-      <div id="secretProgress" class="hidden">Secret Level Progress: <span id="secretProgressBar"></span></div>
+      <div id="holdProgress" class="hidden">
+        <div id="holdProgressBar"></div>
+      </div>
       <div class="menu-tabs">
         <button id="inventoryTab" class="tab-btn active" aria-label="Switch to inventory tab">INVENTORY</button>
         <button id="shopTab" class="tab-btn" aria-label="Switch to shop tab">SHOP</button>
@@ -37,12 +39,12 @@
         <p id="currentBirdName">Bird 1</p>
         <div class="equip-section">
           <button id="prevBird" class="equip-btn btn" aria-label="Previous bird">&lt;</button>
-          <button id="playBtn" class="equip-btn btn large" aria-label="Play with selected bird">PLAY</button>
           <button id="nextBird" class="equip-btn btn" aria-label="Next bird">&gt;</button>
         </div>
         <div class="bird-preview">
           <img id="previewImg" src="assets/bird1.png" alt="Preview of selected bird">
         </div>
+        <button id="playBtn" class="btn large play-btn" aria-label="Play with selected bird">PLAY</button>
       </div>
       <div id="shopScreen" class="hidden">
         <p>Buy birds!</p>
@@ -109,8 +111,7 @@
       </div>
       <div id="achievementNotification" class="achievement-notification hidden" role="dialog" aria-label="Achievement unlocked notification"></div>
       <div id="secretCutscene" class="overlay hidden" role="dialog" aria-label="Secret level cutscene">
-        <h2>ENTERING SECRET REALM</h2>
-        <p>Beware the chaos!</p>
+        <canvas id="cutsceneCanvas"></canvas>
       </div>
       <div id="mazeScreen" class="overlay hidden" role="dialog" aria-label="Maze secret area">
         <canvas id="mazeCanvas"></canvas>
