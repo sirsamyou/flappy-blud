@@ -32,9 +32,10 @@ const prevBirdBtn = document.getElementById('prevBird');
 const nextBirdBtn = document.getElementById('nextBird');
 const playBtn = document.getElementById('playBtn');
 const achievementNotification = document.getElementById('achievementNotification');
+const title = document.getElementById('title');
 
 let bird, pipes = [], coins = [], clouds = [], score = 0, highScore = 0, balance = 0, xp = 0, level = 1;
-let gameRunning = false, isPaused = false;
+let gameRunning = false, isPaused = false, isSecretLevel = false;
 const gravity = 0.6, jump = -10;
 let frames = 0, lastPipe = 0, pipesPassed = 0, lastTime = 0, totalCoinsCollected = 0;
 
@@ -49,9 +50,35 @@ const achievements = [
     { id: 'coin_collector', name: 'Coin Collector', description: 'Collect 10 coins total', condition: () => totalCoinsCollected >= 10, reward: 10, unlocked: false },
     { id: 'sky_master', name: 'Sky Master', description: 'Reach level 5', condition: () => level >= 5, reward: 20, unlocked: false },
     { id: 'bird_enthusiast', name: 'Bird Enthusiast', description: 'Own 5 birds', condition: () => ownedBirds.length >= 5, reward: 30, unlocked: false },
-    { id: 'high_flyer', name: 'High Flyer', description: 'Achieve a high score of 100', condition: () => highScore >= 100, reward: 50, unlocked: false }
+    { id: 'high_flyer', name: 'High Flyer', description: 'Achieve a high score of 100', condition: () => highScore >= 100, reward: 50, unlocked: false },
+    { id: 'secret_seeker', name: 'Secret Seeker', description: '???', unlockedDescription: 'Found the secret level and scored exactly 13 points!', condition: () => isSecretLevel && score === 13, reward: 100, unlocked: false }
 ];
 let notificationQueue = [];
+
+// Secret Level Trigger
+let holdStart = null;
+title.addEventListener('mousedown', startHold);
+title.addEventListener('touchstart', startHold, { passive: false });
+title.addEventListener('mouseup', endHold);
+title.addEventListener('touchend', endHold, { passive: false });
+
+function startHold(e) {
+    if (gameRunning || !menu.classList.contains('hidden')) {
+        holdStart = Date.now();
+        e.preventDefault();
+    }
+}
+function endHold(e) {
+    if (holdStart) {
+        const holdTime = Date.now() - holdStart;
+        if (holdTime >= 13000 && holdTime <= 13500) {
+            isSecretLevel = true;
+            startGame(ownedBirds[currentBirdIndex]);
+        }
+        holdStart = null;
+        e.preventDefault();
+    }
+}
 
 // Preload assets
 const birdImages = {}, cloudImg = new Image(), coinImg = new Image(), checkmarkImg = new Image();
@@ -168,7 +195,7 @@ function displayNextNotification() {
     achievementNotification.innerHTML = `
         <h3>ACHIEVEMENT UNLOCKED!</h3>
         <p>${achievement.name}</p>
-        <p>${achievement.description}</p>
+        <p>${achievement.unlockedDescription || achievement.description}</p>
         <p>Reward: ${achievement.reward} Coins</p>
     `;
     achievementNotification.classList.remove('hidden');
@@ -186,7 +213,7 @@ function updateAchievements() {
         div.className = `achievement-item ${a.unlocked ? 'unlocked' : ''}`;
         div.innerHTML = `
             <h3>${a.name}</h3>
-            <p>${a.description}</p>
+            <p>${a.unlocked ? (a.unlockedDescription || a.description) : '???'}</p>
             <p>Reward: ${a.reward} Coins</p>
             ${a.unlocked ? '<img src="assets/checkmark.png" alt="Achievement unlocked" class="checkmark">' : ''}
         `;
@@ -260,18 +287,29 @@ class Pipe {
             }
             if (score % 50 === 0) addXP(10); // 10 XP every 50 score
             if (pipesPassed % (10 + Math.floor(Math.random() * 6)) === 0) {
-                // Spawn coin NOT on the X level of pipes
-                let coinY;
-                do {
-                    coinY = 100 + Math.random() * (canvas.height - 300);
-                } while (coinY > this.top - 50 && coinY < this.bottom + 50);
+                // Find safe Y zones for coin spawn
+                const safeZones = [];
+                let y = 100;
+                while (y < canvas.height - 150) {
+                    let isSafe = true;
+                    for (let p of pipes) {
+                        if (y > p.top - 50 && y < p.bottom + 50) {
+                            isSafe = false;
+                            break;
+                        }
+                    }
+                    if (isSafe) safeZones.push(y);
+                    y += 10;
+                }
+                const coinY = safeZones.length > 0 ? safeZones[Math.floor(Math.random() * safeZones.length)] : canvas.height / 2;
                 coins.push(new Coin(this.x + this.w/2, coinY));
             }
             checkAchievements();
         }
     }
     draw() {
-        const pipeColor = '#2d5016', capColor = '#1e3a0d';
+        const pipeColor = isSecretLevel ? '#333' : '#2d5016';
+        const capColor = isSecretLevel ? '#222' : '#1e3a0d';
         ctx.fillStyle = pipeColor;
         ctx.fillRect(this.x, 0, this.w, this.top);
         ctx.fillStyle = capColor;
@@ -312,7 +350,14 @@ class Coin {
     }
     draw() {
         if (this.collected) return;
-        ctx.drawImage(coinImg, this.x, this.y, this.w, this.h);
+        if (isSecretLevel) {
+            ctx.save();
+            ctx.filter = 'grayscale(100%)';
+            ctx.drawImage(coinImg, this.x, this.y, this.w, this.h);
+            ctx.restore();
+        } else {
+            ctx.drawImage(coinImg, this.x, this.y, this.w, this.h);
+        }
     }
     hits(b) {
         const bl = b.x - b.w/2, br = b.x + b.w/2;
@@ -349,9 +394,15 @@ function loop(timestamp) {
 
     // Sky
     const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    grad.addColorStop(0, '#87CEEB');
-    grad.addColorStop(0.5, '#B0E0E6');
-    grad.addColorStop(1, '#E0F7FA');
+    if (isSecretLevel) {
+        grad.addColorStop(0, '#999');
+        grad.addColorStop(0.5, '#ccc');
+        grad.addColorStop(1, '#eee');
+    } else {
+        grad.addColorStop(0, '#87CEEB');
+        grad.addColorStop(0.5, '#B0E0E6');
+        grad.addColorStop(1, '#E0F7FA');
+    }
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -369,18 +420,32 @@ function loop(timestamp) {
         c.x -= c.speed * deltaTime;
         c.y += Math.sin(frames * c.wobble) * 0.5 * deltaTime;
         ctx.globalAlpha = 0.8;
-        ctx.drawImage(cloudImg, c.x, c.y, 200, 120);
+        if (isSecretLevel) {
+            ctx.save();
+            ctx.filter = 'grayscale(100%)';
+            ctx.drawImage(cloudImg, c.x, c.y, 200, 120);
+            ctx.restore();
+        } else {
+            ctx.drawImage(cloudImg, c.x, c.y, 200, 120);
+        }
         ctx.globalAlpha = 1;
     });
 
     // Ground
-    ctx.fillStyle = '#4a7c59';
+    ctx.fillStyle = isSecretLevel ? '#666' : '#4a7c59';
     ctx.fillRect(0, canvas.height - 100, canvas.width, 100);
-    ctx.fillStyle = '#5d8c4f';
+    ctx.fillStyle = isSecretLevel ? '#777' : '#5d8c4f';
     ctx.fillRect(0, canvas.height - 100, canvas.width, 20);
 
     bird.update(deltaTime);
-    bird.draw();
+    if (isSecretLevel) {
+        ctx.save();
+        ctx.filter = 'grayscale(100%)';
+        bird.draw();
+        ctx.restore();
+    } else {
+        bird.draw();
+    }
 
     if (frames - lastPipe > 90) {
         pipes.push(new Pipe());
@@ -461,6 +526,7 @@ function endGame() {
     checkAchievements();
     updateAllStats();
     gameover.classList.remove('hidden');
+    isSecretLevel = false; // Reset after game ends
 }
 function goToMenu() {
     game.classList.add('hidden');
@@ -468,7 +534,7 @@ function goToMenu() {
     gameover.classList.add('hidden');
     achievementNotification.classList.add('hidden');
     notificationQueue = [];
-    gameRunning = false; isPaused = false;
+    gameRunning = false; isPaused = false; isSecretLevel = false;
     pausedOverlay.classList.add('hidden');
     showInventoryTab();
 }
