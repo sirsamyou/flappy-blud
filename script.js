@@ -57,24 +57,33 @@ let notificationQueue = [];
 
 // Secret Level Trigger
 let holdStart = null;
+let holdInterval = null;
 title.addEventListener('mousedown', startHold);
 title.addEventListener('touchstart', startHold, { passive: false });
 title.addEventListener('mouseup', endHold);
 title.addEventListener('touchend', endHold, { passive: false });
 
 function startHold(e) {
-    if (gameRunning || !menu.classList.contains('hidden')) {
-        holdStart = Date.now();
-        e.preventDefault();
-    }
-}
-function endHold(e) {
-    if (holdStart) {
-        const holdTime = Date.now() - holdStart;
-        if (holdTime >= 13000 && holdTime <= 13500) {
+    if (gameRunning) return;
+    holdStart = Date.now();
+    title.style.animation = 'titleHold 0.5s ease-in-out infinite alternate';
+    title.style.color = '#00ff88';
+    holdInterval = setInterval(() => {
+        const heldTime = Date.now() - holdStart;
+        if (heldTime >= 13000) {
+            endHold(e);
             isSecretLevel = true;
             startGame(ownedBirds[currentBirdIndex]);
         }
+    }, 100);
+    e.preventDefault();
+}
+
+function endHold(e) {
+    if (holdStart) {
+        clearInterval(holdInterval);
+        title.style.animation = 'titlePulse 2s infinite alternate';
+        title.style.color = '';
         holdStart = null;
         e.preventDefault();
     }
@@ -249,7 +258,14 @@ class Bird {
         ctx.translate(this.x, this.y);
         const rot = Math.min(this.vel * 0.05, Math.PI / 3);
         ctx.rotate(rot);
-        ctx.drawImage(this.img, -this.w/2, -this.h/2, this.w, this.h);
+        if (isSecretLevel) {
+            ctx.save();
+            ctx.filter = 'grayscale(100%)';
+            ctx.drawImage(this.img, -this.w/2, -this.h/2, this.w, this.h);
+            ctx.restore();
+        } else {
+            ctx.drawImage(this.img, -this.w/2, -this.h/2, this.w, this.h);
+        }
         ctx.restore();
     }
     flap() { this.vel = jump; }
@@ -370,12 +386,12 @@ class Coin {
 let lastCloudTime = 0;
 function spawnCloud() {
     const now = Date.now();
-    if (now - lastCloudTime < 4000 + Math.random() * 3000) return;
+    if (now - lastCloudTime < 6000 + Math.random() * 4000) return;
     clouds.push({
         x: canvas.width + 100,
         y: 50 + Math.random() * (canvas.height * 0.3),
-        speed: 0.3 + Math.random() * 0.4,
-        wobble: Math.random() * 0.02
+        speed: 0.1 + Math.random() * 0.2, // Slower horizontal movement
+        wobble: Math.random() * 0.01 // Slower wobble
     });
     lastCloudTime = now;
 }
@@ -417,8 +433,8 @@ function loop(timestamp) {
     spawnCloud();
     clouds = clouds.filter(c => c.x + 200 >= 0);
     clouds.forEach(c => {
-        c.x -= c.speed * deltaTime;
-        c.y += Math.sin(frames * c.wobble) * 0.5 * deltaTime;
+        c.x -= c.speed * deltaTime * 0.5; // Even slower horizontal movement
+        c.y += Math.sin(frames * c.wobble) * 0.3 * deltaTime; // Gentle shaking
         ctx.globalAlpha = 0.8;
         if (isSecretLevel) {
             ctx.save();
@@ -438,14 +454,7 @@ function loop(timestamp) {
     ctx.fillRect(0, canvas.height - 100, canvas.width, 20);
 
     bird.update(deltaTime);
-    if (isSecretLevel) {
-        ctx.save();
-        ctx.filter = 'grayscale(100%)';
-        bird.draw();
-        ctx.restore();
-    } else {
-        bird.draw();
-    }
+    bird.draw();
 
     if (frames - lastPipe > 90) {
         pipes.push(new Pipe());
