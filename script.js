@@ -6,6 +6,8 @@ const ctx = canvas.getContext('2d');
 const menu = document.getElementById('menu');
 const game = document.getElementById('game');
 const pauseBtn = document.getElementById('pauseBtn');
+const pausedOverlay = document.getElementById('pausedOverlay');
+const resumeBtn = document.getElementById('resumeBtn');
 const gameover = document.getElementById('gameover');
 const finalScore = document.getElementById('finalScore');
 const highScoreEl = document.getElementById('highScore');
@@ -15,23 +17,32 @@ const menuBtn2 = document.getElementById('menuBtn2');
 const liveScore = document.getElementById('liveScore');
 const uiHighScore = document.getElementById('uiHighScore');
 const uiBalance = document.getElementById('uiBalance');
+const uiLevel = document.getElementById('uiLevel');
+const uiProgressBar = document.getElementById('uiProgressBar');
 const menuHighScore = document.getElementById('menuHighScore');
 const menuBalance = document.getElementById('menuBalance');
-const countdownEl = document.getElementById('countdown');
+const menuLevel = document.getElementById('menuLevel');
+const menuProgressBar = document.getElementById('menuProgressBar');
 const playTab = document.getElementById('playTab');
 const shopTab = document.getElementById('shopTab');
 const playScreen = document.getElementById('playScreen');
 const shopScreen = document.getElementById('shopScreen');
+const currentBirdName = document.getElementById('currentBirdName');
+const previewImg = document.getElementById('previewImg');
+const prevBirdBtn = document.getElementById('prevBird');
+const nextBirdBtn = document.getElementById('nextBird');
+const equipBirdBtn = document.getElementById('equipBird');
 
-let bird, pipes = [], coins = [], clouds = [], score = 0, highScore = 0, balance = 0, gameRunning = false, isPaused = false;
+let bird, pipes = [], coins = [], clouds = [], score = 0, highScore = 0, balance = 0, xp = 0, level = 1, gameRunning = false, isPaused = false;
 const gravity = 0.6, jump = -10;
-let frames = 0, lastPipe = 0, pipeCount = 0;
+let frames = 0, lastPipe = 0, pipesPassed = 0;
+const birdNames = Array.from({length: 8}, (_, i) => `Bird ${i+1}`);
+const birdPrices = { 'bird1.png': 0, 'bird2.png': 10, 'bird3.png': 20, 'bird4.png': 30, 'bird5.png': 40, 'bird6.png': 50, 'bird7.png': 60, 'bird8.png': 70 };
+let ownedBirds = ['bird1.png'], currentBirdIndex = 0;
 
-// Preload assets
+// Preload
 const birdImages = {}, cloudImg = new Image(), coinImg = new Image();
 const birdOptions = Array.from({length: 8}, (_, i) => `bird${i+1}.png`);
-const birdPrices = { 'bird1.png': 0, 'bird2.png': 50, 'bird3.png': 100, 'bird4.png': 150, 'bird5.png': 200, 'bird6.png': 250, 'bird7.png': 300, 'bird8.png': 350 };
-let ownedBirds = ['bird1.png'];
 
 function preload() {
     birdOptions.forEach(src => {
@@ -44,28 +55,58 @@ function preload() {
 }
 preload();
 
-// Load saves
+// Saves
 function loadSaves() {
     highScore = parseInt(localStorage.getItem('flappyHighScore') || '0');
     balance = parseInt(localStorage.getItem('flappyCoins') || '0');
     ownedBirds = JSON.parse(localStorage.getItem('flappyOwnedBirds') || '["bird1.png"]');
+    xp = parseInt(localStorage.getItem('flappyXP') || '0');
+    updateLevel();
     updateAllStats();
     updateShop();
+    updateEquipMenu();
 }
 function saveSaves() {
     localStorage.setItem('flappyHighScore', highScore);
     localStorage.setItem('flappyCoins', balance);
     localStorage.setItem('flappyOwnedBirds', JSON.stringify(ownedBirds));
+    localStorage.setItem('flappyXP', xp);
 }
+loadSaves();
+
+// Level System
+function updateLevel() {
+    let newLevel = 1;
+    while (xp >= newLevel * 40) newLevel++;
+    newLevel--;
+    if (newLevel !== level) {
+        level = newLevel;
+        xp = xp % (level * 40);
+    }
+}
+function addXP(amount) {
+    xp += amount;
+    updateLevel();
+    updateProgressBars();
+    saveSaves();
+}
+function updateProgressBars() {
+    const progress = (xp / (level * 40)) * 100;
+    uiProgressBar.style.width = progress + '%';
+    menuProgressBar.style.width = progress + '%';
+    uiLevel.textContent = `LVL ${level}`;
+    menuLevel.textContent = `LEVEL ${level}`;
+}
+updateProgressBars();
+
 function updateAllStats() {
     uiHighScore.textContent = `BEST: ${highScore}`;
-    uiBalance.textContent = `COINS: ${balance}`;
+    uiBalance.textContent = `${balance}`;
     menuHighScore.textContent = `HIGH: ${highScore}`;
     menuBalance.textContent = `COINS: ${balance}`;
     highScoreEl.textContent = `High Score: ${highScore}`;
     finalBalance.textContent = `Coins: ${balance}`;
 }
-loadSaves();
 
 // -------------------------------------------------
 // Resize
@@ -118,25 +159,30 @@ class Pipe {
         this.x = canvas.width;
         this.speed = 4;
         this.passed = false;
-        pipeCount++;
     }
     update() {
         if (isPaused || !gameRunning) return;
         this.x -= this.speed;
-        if (this.x + this.w < 0) pipes = pipes.filter(p => p !== this);
+        if (this.x + this.w < 0) {
+            pipes = pipes.filter(p => p !== this);
+            return;
+        }
         if (!this.passed && this.x + this.w < bird.x) {
             this.passed = true;
             score++;
+            pipesPassed++;
             liveScore.textContent = score;
             if (score > highScore) {
                 highScore = score;
                 saveSaves();
                 updateAllStats();
             }
-            // Coin every 10-15 pipes
-            if (pipeCount % (10 + Math.floor(Math.random() * 6)) === 0) {
-                coins.push(new Coin(this.top, this.bottom));
-            }
+            if (pipesPassed % 20 === 0) addXP(1);
+            // Coin - OUTSIDE gap, reachable
+            const coinY = Math.random() < 0.5 
+                ? this.top - 60 
+                : this.bottom + 20;
+            coins.push(new Coin(this.x + this.w/2, coinY));
         }
     }
     draw() {
@@ -161,10 +207,10 @@ class Pipe {
 // Coin
 // -------------------------------------------------
 class Coin {
-    constructor(top, bottom) {
+    constructor(x, y) {
         this.w = 40; this.h = 40;
-        this.x = canvas.width + 100;
-        this.y = top + (bottom - top - this.h) / 2;
+        this.x = x;
+        this.y = y;
         this.collected = false;
     }
     update() {
@@ -190,17 +236,20 @@ class Coin {
 }
 
 // -------------------------------------------------
-// Cloud
-// -------------------------------------------------
+// Clouds (Spaced naturally)
+let lastCloudTime = 0;
 function spawnCloud() {
-    clouds.push({
-        x: canvas.width + 100,
-        y: Math.random() * (canvas.height * 0.4),
-        speed: 0.5 + Math.random() * 0.5
-    });
+    const now = Date.now();
+    if (now - lastCloudTime > 4000 + Math.random() * 3000) {
+        clouds.push({
+            x: canvas.width + 100,
+            y: 50 + Math.random() * (canvas.height * 0.3),
+            speed: 0.3 + Math.random() * 0.4,
+            wobble: Math.random() * 0.02
+        });
+        lastCloudTime = now;
+    }
 }
-setInterval(spawnCloud, 3000);
-spawnCloud();
 
 // -------------------------------------------------
 // Game loop
@@ -216,21 +265,26 @@ function loop() {
     // Sky
     const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
     grad.addColorStop(0, '#87CEEB');
+    grad.addColorStop(0.5, '#B0E0E6');
     grad.addColorStop(1, '#E0F7FA');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Clouds
+    spawnCloud();
     clouds.forEach(c => {
         c.x -= c.speed;
+        c.y += Math.sin(frames * c.wobble) * 0.5;
         if (c.x + 200 < 0) clouds = clouds.filter(cl => cl !== c);
+        ctx.globalAlpha = 0.8;
         ctx.drawImage(cloudImg, c.x, c.y, 200, 120);
+        ctx.globalAlpha = 1;
     });
 
     // Ground
-    ctx.fillStyle = '#567d46';
+    ctx.fillStyle = '#4a7c59';
     ctx.fillRect(0, canvas.height - 100, canvas.width, 100);
-    ctx.fillStyle = '#6b8e23';
+    ctx.fillStyle = '#5d8c4f';
     ctx.fillRect(0, canvas.height - 100, canvas.width, 20);
 
     bird.update();
@@ -254,7 +308,7 @@ function loop() {
 function flap(e) {
     if (!gameRunning || isPaused) return;
     if (e.type === 'keydown' && e.code !== 'Space') return;
-    if (e.target.closest('.ui-btn')) return;
+    if (e.target.closest('.ui-btn, button')) return;
     bird.flap();
     e.preventDefault();
 }
@@ -263,57 +317,25 @@ canvas.addEventListener('touchstart', flap);
 document.addEventListener('keydown', flap);
 
 // -------------------------------------------------
-// Pause + Resume
-// -------------------------------------------------
-let pausedOverlay = null, countdownActive = false;
-
+// Pause/Resume (Button Only)
 function togglePause() {
-    if (!gameRunning || countdownActive) return;
+    if (!gameRunning) return;
     isPaused = !isPaused;
     pauseBtn.textContent = isPaused ? 'RESUME' : 'PAUSE';
-    if (isPaused) {
-        pausedOverlay = document.createElement('div');
-        pausedOverlay.id = 'paused';
-        pausedOverlay.innerHTML = 'PAUSED<br><small>Tap to resume</small>';
-        document.body.appendChild(pausedOverlay);
-    } else {
-        startCountdown();
-    }
+    pausedOverlay.classList.toggle('hidden', !isPaused);
 }
 
-function startCountdown() {
-    if (!pausedOverlay) return;
-    countdownActive = true;
+function resumeGame() {
     isPaused = false;
     pauseBtn.textContent = 'PAUSE';
-    pausedOverlay.remove();
-    pausedOverlay = null;
-
-    let count = 3;
-    countdownEl.classList.remove('hidden');
-    countdownEl.textContent = count;
-
-    const interval = setInterval(() => {
-        count--;
-        if (count > 0) {
-            countdownEl.textContent = count;
-        } else {
-            countdownEl.classList.add('hidden');
-            countdownActive = false;
-            requestAnimationFrame(loop);
-            clearInterval(interval);
-        }
-    }, 800);
+    pausedOverlay.classList.add('hidden');
+    requestAnimationFrame(loop);
 }
 
-canvas.addEventListener('mousedown', e => {
-    if (isPaused && !countdownActive && !e.target.closest('#pauseBtn')) startCountdown();
-});
-canvas.addEventListener('touchstart', e => {
-    if (isPaused && !countdownActive && !e.target.closest('#pauseBtn')) startCountdown();
-});
-
 pauseBtn.addEventListener('click', togglePause);
+pausedOverlay.addEventListener('click', (e) => {
+    if (e.target === pausedOverlay || e.target === resumeBtn) resumeGame();
+});
 
 // -------------------------------------------------
 // Game Flow
@@ -326,15 +348,14 @@ function startGame(birdSrc) {
     game.classList.remove('hidden');
     gameover.classList.add('hidden');
 
-    isPaused = false; countdownActive = false;
+    isPaused = false;
     pauseBtn.textContent = 'PAUSE';
-    countdownEl.classList.add('hidden');
-    if (pausedOverlay) { pausedOverlay.remove(); pausedOverlay = null; }
+    pausedOverlay.classList.add('hidden');
 
     bird = new Bird(currentBird);
     pipes = []; coins = []; clouds = [];
     score = 0; liveScore.textContent = '0';
-    frames = 0; lastPipe = 0; pipeCount = 0;
+    pipesPassed = 0; frames = 0; lastPipe = 0;
     gameRunning = true;
     requestAnimationFrame(loop);
 }
@@ -350,23 +371,22 @@ function goToMenu() {
     game.classList.add('hidden');
     menu.classList.remove('hidden');
     gameover.classList.add('hidden');
-    gameRunning = false; isPaused = false; countdownActive = false;
-    if (pausedOverlay) { pausedOverlay.remove(); pausedOverlay = null; }
-    countdownEl.classList.add('hidden');
+    gameRunning = false; isPaused = false;
+    pausedOverlay.classList.add('hidden');
     showPlayTab();
 }
 
 // -------------------------------------------------
 // Menu Tabs
 // -------------------------------------------------
-function showPlayTab() {
+function showPlayTab() { 
     playTab.classList.add('active');
     shopTab.classList.remove('active');
     playScreen.classList.remove('hidden');
     shopScreen.classList.add('hidden');
+    updateEquipMenu();
 }
-
-function showShopTab() {
+function showShopTab() { 
     playTab.classList.remove('active');
     shopTab.classList.add('active');
     playScreen.classList.add('hidden');
@@ -378,36 +398,50 @@ playTab.addEventListener('click', showPlayTab);
 shopTab.addEventListener('click', showShopTab);
 
 // -------------------------------------------------
-// Bird selection
-// -------------------------------------------------
-document.querySelectorAll('.bird-select button').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const src = btn.dataset.bird;
-        if (!ownedBirds.includes(src)) return;
-        document.querySelectorAll('.bird-select button').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-        startGame(src);
-    });
-});
+// Equip Menu
+function updateEquipMenu() {
+    currentBirdIndex = ownedBirds.indexOf(currentBird);
+    if (currentBirdIndex === -1) {
+        currentBirdIndex = 0;
+        currentBird = ownedBirds[0];
+    }
+    const birdSrc = ownedBirds[currentBirdIndex];
+    currentBirdName.textContent = birdNames[ownedBirds.indexOf(birdSrc)];
+    previewImg.src = 'assets/' + birdSrc;
+    prevBirdBtn.disabled = currentBirdIndex === 0;
+    nextBirdBtn.disabled = currentBirdIndex === ownedBirds.length - 1;
+}
 
+prevBirdBtn.addEventListener('click', () => {
+    if (currentBirdIndex > 0) {
+        currentBirdIndex--;
+        updateEquipMenu();
+    }
+});
+nextBirdBtn.addEventListener('click', () => {
+    if (currentBirdIndex < ownedBirds.length - 1) {
+        currentBirdIndex++;
+        updateEquipMenu();
+    }
+});
+equipBirdBtn.addEventListener('click', () => startGame(ownedBirds[currentBirdIndex]));
+
+// -------------------------------------------------
 // Shop
 function updateShop() {
     document.querySelectorAll('.shop-item').forEach(item => {
         const src = item.dataset.bird;
         const btn = item.querySelector('.buy-btn');
         if (ownedBirds.includes(src)) {
-            if (btn) btn.classList.add('owned');
-            document.querySelector(`.bird-select button[data-bird="${src}"]`).classList.remove('locked');
-        } else {
-            if (btn) btn.classList.remove('owned');
-            document.querySelector(`.bird-select button[data-bird="${src}"]`).classList.add('locked');
+            item.classList.add('owned');
+            if (btn) btn.remove();
         }
     });
 }
 
-document.querySelectorAll('.shop-item .buy-btn').forEach(btn => {
+document.querySelectorAll('.buy-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-        const item = btn.parentElement;
+        const item = btn.closest('.shop-item');
         const src = item.dataset.bird;
         const price = birdPrices[src];
         if (ownedBirds.includes(src) || balance < price) return;
@@ -416,6 +450,7 @@ document.querySelectorAll('.shop-item .buy-btn').forEach(btn => {
         saveSaves();
         updateAllStats();
         updateShop();
+        updateEquipMenu();
     });
 });
 
@@ -428,4 +463,5 @@ menuBtn2.onclick = goToMenu;
 window.addEventListener('load', () => {
     updateAllStats();
     updateShop();
+    updateEquipMenu();
 });
