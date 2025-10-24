@@ -20,28 +20,41 @@ const currentLevel = document.getElementById('currentLevel');
 const nextLevel = document.getElementById('nextLevel');
 const menuProgressBar = document.getElementById('menuProgressBar');
 const xpText = document.getElementById('xpText');
-const playTab = document.getElementById('playTab');
+const inventoryTab = document.getElementById('inventoryTab');
 const shopTab = document.getElementById('shopTab');
-const playScreen = document.getElementById('playScreen');
+const achievementsTab = document.getElementById('achievementsTab');
+const inventoryScreen = document.getElementById('inventoryScreen');
 const shopScreen = document.getElementById('shopScreen');
+const achievementsScreen = document.getElementById('achievementsScreen');
 const currentBirdName = document.getElementById('currentBirdName');
 const previewImg = document.getElementById('previewImg');
 const prevBirdBtn = document.getElementById('prevBird');
 const nextBirdBtn = document.getElementById('nextBird');
-const equipBirdBtn = document.getElementById('equipBird');
+const playBtn = document.getElementById('playBtn');
+const achievementNotification = document.getElementById('achievementNotification');
 
 let bird, pipes = [], coins = [], clouds = [], score = 0, highScore = 0, balance = 0, xp = 0, level = 1;
 let gameRunning = false, isPaused = false;
 const gravity = 0.6, jump = -10;
-let frames = 0, lastPipe = 0, pipesPassed = 0, lastTime = 0;
+let frames = 0, lastPipe = 0, pipesPassed = 0, lastTime = 0, totalCoinsCollected = 0;
 
 const birdOptions = Array.from({length: 8}, (_, i) => `bird${i+1}.png`);
 const birdNames = Array.from({length: 8}, (_, i) => `Bird ${i+1}`);
 const birdPrices = { 'bird1.png': 0, 'bird2.png': 10, 'bird3.png': 20, 'bird4.png': 30, 'bird5.png': 40, 'bird6.png': 50, 'bird7.png': 60, 'bird8.png': 70 };
 let ownedBirds = ['bird1.png'], currentBirdIndex = 0;
 
+// Achievements
+const achievements = [
+    { id: 'first_flight', name: 'First Flight', description: 'Score 10 points in a single run', condition: () => score >= 10, reward: 5, unlocked: false },
+    { id: 'coin_collector', name: 'Coin Collector', description: 'Collect 10 coins total', condition: () => totalCoinsCollected >= 10, reward: 10, unlocked: false },
+    { id: 'sky_master', name: 'Sky Master', description: 'Reach level 5', condition: () => level >= 5, reward: 20, unlocked: false },
+    { id: 'bird_enthusiast', name: 'Bird Enthusiast', description: 'Own 5 birds', condition: () => ownedBirds.length >= 5, reward: 30, unlocked: false },
+    { id: 'high_flyer', name: 'High Flyer', description: 'Achieve a high score of 100', condition: () => highScore >= 100, reward: 50, unlocked: false }
+];
+let notificationQueue = [];
+
 // Preload assets
-const birdImages = {}, cloudImg = new Image(), coinImg = new Image();
+const birdImages = {}, cloudImg = new Image(), coinImg = new Image(), checkmarkImg = new Image();
 function preload() {
     try {
         birdOptions.forEach(src => {
@@ -54,6 +67,8 @@ function preload() {
         cloudImg.onerror = () => console.error('Failed to load cloud image');
         coinImg.src = 'assets/coin.png';
         coinImg.onerror = () => console.error('Failed to load coin image');
+        checkmarkImg.src = 'assets/checkmark.png';
+        checkmarkImg.onerror = () => console.error('Failed to load checkmark image');
     } catch (e) {
         console.error('Error preloading assets:', e);
     }
@@ -66,10 +81,14 @@ function loadSaves() {
         highScore = parseInt(localStorage.getItem('flappyHighScore') || '0');
         balance = parseInt(localStorage.getItem('flappyCoins') || '0');
         xp = parseInt(localStorage.getItem('flappyXP') || '0');
+        totalCoinsCollected = parseInt(localStorage.getItem('flappyTotalCoins') || '0');
         ownedBirds = JSON.parse(localStorage.getItem('flappyOwnedBirds') || '["bird1.png"]');
+        const savedAchievements = JSON.parse(localStorage.getItem('flappyAchievements') || '{}');
+        achievements.forEach(a => a.unlocked = savedAchievements[a.id] || false);
         updateLevel();
         updateAllStats();
         updateShop();
+        updateAchievements();
         updateEquipMenu();
     } catch (e) {
         console.error('Error loading saves:', e);
@@ -80,7 +99,11 @@ function saveSaves() {
         localStorage.setItem('flappyHighScore', highScore);
         localStorage.setItem('flappyCoins', balance);
         localStorage.setItem('flappyXP', xp);
+        localStorage.setItem('flappyTotalCoins', totalCoinsCollected);
         localStorage.setItem('flappyOwnedBirds', JSON.stringify(ownedBirds));
+        const savedAchievements = {};
+        achievements.forEach(a => savedAchievements[a.id] = a.unlocked);
+        localStorage.setItem('flappyAchievements', JSON.stringify(savedAchievements));
     } catch (e) {
         console.error('Error saving data:', e);
     }
@@ -102,7 +125,10 @@ function updateLevel() {
         totalXP -= newLevel * 40;
         newLevel++;
     }
-    level = newLevel;
+    if (newLevel !== level) {
+        level = newLevel;
+        checkAchievements();
+    }
     xp = totalXP;
     const progress = (xp / (level * 40)) * 100;
     menuProgressBar.style.width = `${progress}%`;
@@ -117,6 +143,55 @@ function addXP(amount) {
 }
 function addCoinXP() {
     addXP(1); // 1 XP per coin collected
+}
+
+// Achievements
+function checkAchievements() {
+    achievements.forEach(a => {
+        if (!a.unlocked && a.condition()) {
+            a.unlocked = true;
+            balance += a.reward;
+            updateAllStats();
+            saveSaves();
+            showAchievementNotification(a);
+        }
+    });
+    updateAchievements();
+}
+function showAchievementNotification(achievement) {
+    notificationQueue.push(achievement);
+    if (notificationQueue.length === 1) displayNextNotification();
+}
+function displayNextNotification() {
+    if (!notificationQueue.length) return;
+    const achievement = notificationQueue[0];
+    achievementNotification.innerHTML = `
+        <h3>ACHIEVEMENT UNLOCKED!</h3>
+        <p>${achievement.name}</p>
+        <p>${achievement.description}</p>
+        <p>Reward: ${achievement.reward} Coins</p>
+    `;
+    achievementNotification.classList.remove('hidden');
+    setTimeout(() => {
+        achievementNotification.classList.add('hidden');
+        notificationQueue.shift();
+        displayNextNotification();
+    }, 3000);
+}
+function updateAchievements() {
+    const container = document.querySelector('.achievement-items');
+    container.innerHTML = '';
+    achievements.forEach(a => {
+        const div = document.createElement('div');
+        div.className = `achievement-item ${a.unlocked ? 'unlocked' : ''}`;
+        div.innerHTML = `
+            <h3>${a.name}</h3>
+            <p>${a.description}</p>
+            <p>Reward: ${a.reward} Coins</p>
+            ${a.unlocked ? '<img src="assets/checkmark.png" alt="Achievement unlocked" class="checkmark">' : ''}
+        `;
+        container.appendChild(div);
+    });
 }
 
 // Resize
@@ -179,17 +254,20 @@ class Pipe {
             liveScore.textContent = score;
             if (score > highScore) {
                 highScore = score;
+                checkAchievements();
                 saveSaves();
                 updateAllStats();
             }
-            if (pipesPassed % 10 === 0) addXP(1); // 1 XP every 10 pipes
+            if (score % 50 === 0) addXP(10); // 10 XP every 50 score
             if (pipesPassed % (10 + Math.floor(Math.random() * 6)) === 0) {
-                // Ensure coins spawn in safe areas
-                const safeTop = Math.max(50, this.top - 100);
-                const safeBottom = Math.min(canvas.height - 150, this.bottom + 100);
-                const coinY = safeTop + Math.random() * (safeBottom - safeTop);
+                // Spawn coin NOT on the X level of pipes
+                let coinY;
+                do {
+                    coinY = 100 + Math.random() * (canvas.height - 300);
+                } while (coinY > this.top - 50 && coinY < this.bottom + 50);
                 coins.push(new Coin(this.x + this.w/2, coinY));
             }
+            checkAchievements();
         }
     }
     draw() {
@@ -225,7 +303,9 @@ class Coin {
         if (!this.collected && this.hits(bird)) {
             this.collected = true;
             balance++;
+            totalCoinsCollected++;
             addCoinXP();
+            checkAchievements();
             updateAllStats();
             saveSaves();
         }
@@ -262,7 +342,7 @@ function loop(timestamp) {
         return;
     }
 
-    const deltaTime = Math.min((timestamp - lastTime) / 16.67, 2); // Cap deltaTime to prevent large jumps
+    const deltaTime = Math.min((timestamp - lastTime) / 16.67, 2);
     lastTime = timestamp;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -273,6 +353,13 @@ function loop(timestamp) {
     grad.addColorStop(0.5, '#B0E0E6');
     grad.addColorStop(1, '#E0F7FA');
     ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Vignette
+    const vigGrad = ctx.createRadialGradient(canvas.width/2, canvas.height/2, canvas.height/4, canvas.width/2, canvas.height/2, canvas.height);
+    vigGrad.addColorStop(0, 'rgba(0,0,0,0)');
+    vigGrad.addColorStop(1, 'rgba(0,0,0,0.3)');
+    ctx.fillStyle = vigGrad;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Clouds
@@ -314,7 +401,7 @@ function flap(e) {
     if (e.type === 'keydown' && e.code !== 'Space') return;
     if (e.target.closest('.btn')) return;
     const now = Date.now();
-    if (e.type === 'touchstart' && now - lastTouchTime < 200) return; // Debounce touch
+    if (e.type === 'touchstart' && now - lastTouchTime < 200) return;
     bird.flap();
     if (e.type === 'touchstart') lastTouchTime = now;
     e.preventDefault();
@@ -356,6 +443,8 @@ function startGame(birdSrc) {
     isPaused = false;
     pauseBtn.textContent = 'PAUSE';
     pausedOverlay.classList.add('hidden');
+    achievementNotification.classList.add('hidden');
+    notificationQueue = [];
 
     bird = new Bird(currentBird);
     pipes = []; coins = []; clouds = [];
@@ -369,6 +458,7 @@ function startGame(birdSrc) {
 function endGame() {
     gameRunning = false;
     finalScore.textContent = `Score: ${score}`;
+    checkAchievements();
     updateAllStats();
     gameover.classList.remove('hidden');
 }
@@ -376,28 +466,44 @@ function goToMenu() {
     game.classList.add('hidden');
     menu.classList.remove('hidden');
     gameover.classList.add('hidden');
+    achievementNotification.classList.add('hidden');
+    notificationQueue = [];
     gameRunning = false; isPaused = false;
     pausedOverlay.classList.add('hidden');
-    showPlayTab();
+    showInventoryTab();
 }
 
 // Menu Tabs
-function showPlayTab() {
-    playTab.classList.add('active');
+function showInventoryTab() {
+    inventoryTab.classList.add('active');
     shopTab.classList.remove('active');
-    playScreen.classList.remove('hidden');
+    achievementsTab.classList.remove('active');
+    inventoryScreen.classList.remove('hidden');
     shopScreen.classList.add('hidden');
+    achievementsScreen.classList.add('hidden');
     updateEquipMenu();
 }
 function showShopTab() {
-    playTab.classList.remove('active');
+    inventoryTab.classList.remove('active');
     shopTab.classList.add('active');
-    playScreen.classList.add('hidden');
+    achievementsTab.classList.remove('active');
+    inventoryScreen.classList.add('hidden');
     shopScreen.classList.remove('hidden');
+    achievementsScreen.classList.add('hidden');
     updateShop();
 }
-playTab.addEventListener('click', showPlayTab);
+function showAchievementsTab() {
+    inventoryTab.classList.remove('active');
+    shopTab.classList.remove('active');
+    achievementsTab.classList.add('active');
+    inventoryScreen.classList.add('hidden');
+    shopScreen.classList.add('hidden');
+    achievementsScreen.classList.remove('hidden');
+    updateAchievements();
+}
+inventoryTab.addEventListener('click', showInventoryTab);
 shopTab.addEventListener('click', showShopTab);
+achievementsTab.addEventListener('click', showAchievementsTab);
 
 // Equip Menu
 function updateEquipMenu() {
@@ -423,7 +529,7 @@ nextBirdBtn.addEventListener('click', () => {
         updateEquipMenu();
     }
 });
-equipBirdBtn.addEventListener('click', () => startGame(ownedBirds[currentBirdIndex]));
+playBtn.addEventListener('click', () => startGame(ownedBirds[currentBirdIndex]));
 
 // Shop
 function updateShop() {
@@ -438,6 +544,7 @@ function updateShop() {
             if (btn) btn.disabled = balance < birdPrices[src];
         }
     });
+    checkAchievements();
 }
 function attachShopListeners() {
     document.querySelectorAll('.buy-btn').forEach(btn => {
@@ -468,5 +575,6 @@ window.addEventListener('load', () => {
     updateAllStats();
     updateShop();
     attachShopListeners();
+    updateAchievements();
     updateEquipMenu();
 });
