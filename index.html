@@ -27,6 +27,7 @@
         </div>
       </div>
       <h1 id="title">FLAPPY BLUD</h1>
+      <div id="secretProgress" class="hidden">Secret Level Progress: <span id="secretProgressBar"></span></div>
       <div class="menu-tabs">
         <button id="inventoryTab" class="tab-btn active" aria-label="Switch to inventory tab">INVENTORY</button>
         <button id="shopTab" class="tab-btn" aria-label="Switch to shop tab">SHOP</button>
@@ -99,6 +100,7 @@
       <div id="ui">
         <div id="liveScore">0</div>
         <div id="uiHighScore">BEST: 0</div>
+        <div id="modifierNotification" class="modifier-notification hidden"></div>
       </div>
       <button id="pauseBtn" class="ui-btn btn" aria-label="Pause or resume game">PAUSE</button>
       <div id="pausedOverlay" class="overlay hidden" role="dialog" aria-label="Paused game overlay">
@@ -106,15 +108,25 @@
         <button id="resumeBtn" class="ui-btn btn" aria-label="Resume game">RESUME</button>
       </div>
       <div id="achievementNotification" class="achievement-notification hidden" role="dialog" aria-label="Achievement unlocked notification"></div>
+      <div id="secretCutscene" class="overlay hidden" role="dialog" aria-label="Secret level cutscene">
+        <h2>ENTERING SECRET REALM</h2>
+        <p>Beware the chaos!</p>
+      </div>
+      <div id="mazeScreen" class="overlay hidden" role="dialog" aria-label="Maze secret area">
+        <canvas id="mazeCanvas"></canvas>
+        <button id="exitMazeBtn" class="ui-btn btn" aria-label="Exit maze">EXIT MAZE</button>
+      </div>
     </div>
 
     <!-- GAME OVER SCREEN -->
     <div id="gameover" class="overlay hidden" role="dialog" aria-label="Game over overlay">
       <h2>GAME OVER</h2>
-      <p id="finalScore">Score: 0</p>
-      <p id="highScore">High Score: 0</p>
-      <p id="finalBalance">Coins: 0</p>
-      <div>
+      <div class="gameover-stats">
+        <p id="finalScore">Score: 0</p>
+        <p id="highScore">High Score: 0</p>
+        <p id="finalBalance">Coins: 0</p>
+      </div>
+      <div class="gameover-buttons">
         <button id="restartBtn2" class="ui-btn btn" aria-label="Restart game">RESTART</button>
         <button id="menuBtn2" class="ui-btn btn" aria-label="Return to main menu">MENU</button>
       </div>
