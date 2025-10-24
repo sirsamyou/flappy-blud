@@ -12,8 +12,10 @@
     <!-- MENU SCREEN -->
     <div id="menu" class="screen">
       <div id="menuStats">
-        <div id="menuHighScore">HIGH: 0</div>
-        <div id="menuBalance">COINS: 0</div>
+        <div class="stat-group">
+          <div id="menuHighScore">HIGH: 0</div>
+          <div id="menuBalance">COINS: 0</div>
+        </div>
         <div class="level-progress">
           <span id="currentLevel">LVL 1</span>
           <div class="progress-container">
@@ -26,14 +28,15 @@
       </div>
       <h1>FLAPPY BLUD</h1>
       <div class="menu-tabs">
-        <button id="playTab" class="tab-btn active" aria-label="Switch to play tab">PLAY</button>
+        <button id="inventoryTab" class="tab-btn active" aria-label="Switch to inventory tab">INVENTORY</button>
         <button id="shopTab" class="tab-btn" aria-label="Switch to shop tab">SHOP</button>
+        <button id="achievementsTab" class="tab-btn" aria-label="Switch to achievements tab">ACHIEVEMENTS</button>
       </div>
-      <div id="playScreen">
+      <div id="inventoryScreen">
         <p id="currentBirdName">Bird 1</p>
         <div class="equip-section">
           <button id="prevBird" class="equip-btn btn" aria-label="Previous bird">&lt;</button>
-          <button id="equipBird" class="equip-btn btn large" aria-label="Equip selected bird">EQUIP</button>
+          <button id="playBtn" class="equip-btn btn large" aria-label="Play with selected bird">PLAY</button>
           <button id="nextBird" class="equip-btn btn" aria-label="Next bird">&gt;</button>
         </div>
         <div class="bird-preview">
@@ -84,6 +87,10 @@
           </div>
         </div>
       </div>
+      <div id="achievementsScreen" class="hidden">
+        <p>Achievements</p>
+        <div class="achievement-items"></div>
+      </div>
     </div>
 
     <!-- GAME SCREEN -->
@@ -98,6 +105,7 @@
         <h2>PAUSED</h2>
         <button id="resumeBtn" class="ui-btn btn" aria-label="Resume game">RESUME</button>
       </div>
+      <div id="achievementNotification" class="achievement-notification hidden" role="dialog" aria-label="Achievement unlocked notification"></div>
     </div>
 
     <!-- GAME OVER SCREEN -->
