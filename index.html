@@ -8,110 +8,110 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <main>
+    <!-- MENU SCREEN -->
+    <div id="menu" class="screen">
+      <h1>FLAPPY BLUD</h1>
+      <div id="menuStats">
+        <div id="menuHighScore">HIGH: 0</div>
+        <div id="menuBalance">COINS: 0</div>
+        <div id="menuLevel">LEVEL 1</div>
+        <div class="progress-container">
+          <div id="menuProgressBar"></div>
+        </div>
+      </div>
+      <div class="menu-tabs">
+        <button id="playTab" class="tab-btn active" aria-label="Switch to play tab">PLAY</button>
+        <button id="shopTab" class="tab-btn" aria-label="Switch to shop tab">SHOP</button>
+      </div>
+      <div id="playScreen">
+        <p id="currentBirdName">Bird 1</p>
+        <div class="equip-section">
+          <button id="prevBird" class="equip-btn btn" aria-label="Previous bird">&lt;</button>
+          <button id="equipBird" class="equip-btn btn large" aria-label="Equip selected bird">EQUIP</button>
+          <button id="nextBird" class="equip-btn btn" aria-label="Next bird">&gt;</button>
+        </div>
+        <div class="bird-preview">
+          <img id="previewImg" src="assets/bird1.png" alt="Preview of selected bird">
+        </div>
+      </div>
+      <div id="shopScreen" class="hidden">
+        <p>Buy birds!</p>
+        <div class="shop-items">
+          <div class="shop-item" data-bird="bird1.png">
+            <img src="assets/bird1.png" alt="Bird 1 for purchase">
+            <p>Bird 1<br><span class="price">FREE</span></p>
+          </div>
+          <div class="shop-item" data-bird="bird2.png">
+            <img src="assets/bird2.png" alt="Bird 2 for purchase">
+            <p>Bird 2<br><span class="price">10 Coins</span></p>
+            <button class="buy-btn btn" aria-label="Buy Bird 2">BUY</button>
+          </div>
+          <div class="shop-item" data-bird="bird3.png">
+            <img src="assets/bird3.png" alt="Bird 3 for purchase">
+            <p>Bird 3<br><span class="price">20 Coins</span></p>
+            <button class="buy-btn btn" aria-label="Buy Bird 3">BUY</button>
+          </div>
+          <div class="shop-item" data-bird="bird4.png">
+            <img src="assets/bird4.png" alt="Bird 4 for purchase">
+            <p>Bird 4<br><span class="price">30 Coins</span></p>
+            <button class="buy-btn btn" aria-label="Buy Bird 4">BUY</button>
+          </div>
+          <div class="shop-item" data-bird="bird5.png">
+            <img src="assets/bird5.png" alt="Bird 5 for purchase">
+            <p>Bird 5<br><span class="price">40 Coins</span></p>
+            <button class="buy-btn btn" aria-label="Buy Bird 5">BUY</button>
+          </div>
+          <div class="shop-item" data-bird="bird6.png">
+            <img src="assets/bird6.png" alt="Bird 6 for purchase">
+            <p>Bird 6<br><span class="price">50 Coins</span></p>
+            <button class="buy-btn btn" aria-label="Buy Bird 6">BUY</button>
+          </div>
+          <div class="shop-item" data-bird="bird7.png">
+            <img src="assets/bird7.png" alt="Bird 7 for purchase">
+            <p>Bird 7<br><span class="price">60 Coins</span></p>
+            <button class="buy-btn btn" aria-label="Buy Bird 7">BUY</button>
+          </div>
+          <div class="shop-item" data-bird="bird8.png">
+            <img src="assets/bird8.png" alt="Bird 8 for purchase">
+            <p>Bird 8<br><span class="price">70 Coins</span></p>
+            <button class="buy-btn btn" aria-label="Buy Bird 8">BUY</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
-  <!-- MENU SCREEN -->
-  <div id="menu" class="screen">
-    <h1>FLAPPY BLUD</h1>
-    <div id="menuStats">
-      <div id="menuHighScore">HIGH: 0</div>
-      <div id="menuBalance">COINS: 0</div>
-      <div id="menuLevel">LEVEL 1</div>
-      <div class="progress-container">
-        <div id="menuProgressBar"></div>
-      </div>
-    </div>
-    <div class="menu-tabs">
-      <button id="playTab" class="tab-btn active">PLAY</button>
-      <button id="shopTab" class="tab-btn">SHOP</button>
-    </div>
-    <div id="playScreen">
-      <p id="currentBirdName">Bird 1</p>
-      <div class="equip-section">
-        <button id="prevBird" class="equip-btn">&lt;</button>
-        <button id="equipBird" class="equip-btn large">EQUIP</button>
-        <button id="nextBird" class="equip-btn">&gt;</button>
-      </div>
-      <div class="bird-preview">
-        <img id="previewImg" src="assets/bird1.png" alt="Current Bird">
-      </div>
-    </div>
-    <div id="shopScreen" class="hidden">
-      <p>Buy birds!</p>
-      <div class="shop-items">
-        <div class="shop-item" data-bird="bird1.png">
-          <img src="assets/bird1.png" alt="Bird 1">
-          <p>Bird 1<br><span class="price">FREE</span></p>
-        </div>
-        <div class="shop-item" data-bird="bird2.png">
-          <img src="assets/bird2.png" alt="Bird 2">
-          <p>Bird 2<br><span class="price">10 Coins</span></p>
-          <button class="buy-btn">BUY</button>
-        </div>
-        <div class="shop-item" data-bird="bird3.png">
-          <img src="assets/bird3.png" alt="Bird 3">
-          <p>Bird 3<br><span class="price">20 Coins</span></p>
-          <button class="buy-btn">BUY</button>
-        </div>
-        <div class="shop-item" data-bird="bird4.png">
-          <img src="assets/bird4.png" alt="Bird 4">
-          <p>Bird 4<br><span class="price">30 Coins</span></p>
-          <button class="buy-btn">BUY</button>
-        </div>
-        <div class="shop-item" data-bird="bird5.png">
-          <img src="assets/bird5.png" alt="Bird 5">
-          <p>Bird 5<br><span class="price">40 Coins</span></p>
-          <button class="buy-btn">BUY</button>
-        </div>
-        <div class="shop-item" data-bird="bird6.png">
-          <img src="assets/bird6.png" alt="Bird 6">
-          <p>Bird 6<br><span class="price">50 Coins</span></p>
-          <button class="buy-btn">BUY</button>
-        </div>
-        <div class="shop-item" data-bird="bird7.png">
-          <img src="assets/bird7.png" alt="Bird 7">
-          <p>Bird 7<br><span class="price">60 Coins</span></p>
-          <button class="buy-btn">BUY</button>
-        </div>
-        <div class="shop-item" data-bird="bird8.png">
-          <img src="assets/bird8.png" alt="Bird 8">
-          <p>Bird 8<br><span class="price">70 Coins</span></p>
-          <button class="buy-btn">BUY</button>
+    <!-- GAME SCREEN -->
+    <div id="game" class="screen hidden">
+      <canvas id="canvas"></canvas>
+      <div id="ui">
+        <div id="liveScore">0</div>
+        <div id="uiHighScore">BEST: 0</div>
+        <div id="uiBalance">COINS: 0</div>
+        <div id="uiLevel">LVL 1</div>
+        <div class="progress-container">
+          <div id="uiProgressBar"></div>
         </div>
       </div>
+      <button id="pauseBtn" class="ui-btn btn" aria-label="Pause or resume game">PAUSE</button>
+      <div id="pausedOverlay" class="overlay hidden" role="dialog" aria-label="Paused game overlay">
+        <h2>PAUSED</h2>
+        <button id="resumeBtn" class="ui-btn btn" aria-label="Resume game">RESUME</button>
+      </div>
     </div>
-  </div>
 
-  <!-- GAME SCREEN -->
-  <div id="game" class="screen hidden">
-    <canvas id="canvas"></canvas>
-    <div id="ui">
-      <div id="liveScore">0</div>
-      <div id="uiHighScore">BEST: 0</div>
-      <div id="uiBalance">COINS: 0</div>
-      <div id="uiLevel">LVL 1</div>
-      <div class="progress-container">
-        <div id="uiProgressBar"></div>
+    <!-- GAME OVER SCREEN -->
+    <div id="gameover" class="overlay hidden" role="dialog" aria-label="Game over overlay">
+      <h2>GAME OVER</h2>
+      <p id="finalScore">Score: 0</p>
+      <p id="highScore">High Score: 0</p>
+      <p id="finalBalance">Coins: 0</p>
+      <div>
+        <button id="restartBtn2" class="ui-btn btn" aria-label="Restart game">RESTART</button>
+        <button id="menuBtn2" class="ui-btn btn" aria-label="Return to main menu">MENU</button>
       </div>
     </div>
-    <button id="pauseBtn" class="ui-btn">PAUSE</button>
-    <div id="pausedOverlay" class="overlay hidden">
-      <h2>PAUSED</h2>
-      <button id="resumeBtn" class="ui-btn">RESUME</button>
-    </div>
-  </div>
-
-  <!-- GAME OVER SCREEN -->
-  <div id="gameover" class="overlay hidden">
-    <h2>GAME OVER</h2>
-    <p id="finalScore">Score: 0</p>
-    <p id="highScore">High Score: 0</p>
-    <p id="finalBalance">Coins: 0</p>
-    <div>
-      <button id="restartBtn2" class="ui-btn">RESTART</button>
-      <button id="menuBtn2" class="ui-btn">MENU</button>
-    </div>
-  </div>
-
+  </main>
   <script src="script.js"></script>
 </body>
 </html>
