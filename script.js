@@ -31,9 +31,10 @@ const prevBirdBtn = document.getElementById('prevBird');
 const nextBirdBtn = document.getElementById('nextBird');
 const equipBirdBtn = document.getElementById('equipBird');
 
-let bird, pipes = [], coins = [], clouds = [], score = 0, highScore = 0, balance = 0, xp = 0, level = 1, gameRunning = false, isPaused = false;
+let bird, pipes = [], coins = [], clouds = [], score = 0, highScore = 0, balance = 0, xp = 0, level = 1;
+let gameRunning = false, isPaused = false;
 const gravity = 0.6, jump = -10;
-let frames = 0, lastPipe = 0, pipesPassed = 0;
+let frames = 0, lastPipe = 0, pipesPassed = 0, lastTime = 0;
 
 const birdOptions = Array.from({length: 8}, (_, i) => `bird${i+1}.png`);
 const birdNames = Array.from({length: 8}, (_, i) => `Bird ${i+1}`);
@@ -43,32 +44,47 @@ let ownedBirds = ['bird1.png'], currentBirdIndex = 0;
 // Preload assets
 const birdImages = {}, cloudImg = new Image(), coinImg = new Image();
 function preload() {
-    birdOptions.forEach(src => {
-        const img = new Image();
-        img.src = 'assets/' + src;
-        birdImages[src] = img;
-    });
-    cloudImg.src = 'assets/cloud.png';
-    coinImg.src = 'assets/coin.png';
+    try {
+        birdOptions.forEach(src => {
+            const img = new Image();
+            img.src = 'assets/' + src;
+            img.onerror = () => console.error(`Failed to load image: assets/${src}`);
+            birdImages[src] = img;
+        });
+        cloudImg.src = 'assets/cloud.png';
+        cloudImg.onerror = () => console.error('Failed to load cloud image');
+        coinImg.src = 'assets/coin.png';
+        coinImg.onerror = () => console.error('Failed to load coin image');
+    } catch (e) {
+        console.error('Error preloading assets:', e);
+    }
 }
 preload();
 
 // Save/load
 function loadSaves() {
-    highScore = parseInt(localStorage.getItem('flappyHighScore') || '0');
-    balance = parseInt(localStorage.getItem('flappyCoins') || '0');
-    xp = parseInt(localStorage.getItem('flappyXP') || '0');
-    ownedBirds = JSON.parse(localStorage.getItem('flappyOwnedBirds') || '["bird1.png"]');
-    updateLevel();
-    updateAllStats();
-    updateShop();
-    updateEquipMenu();
+    try {
+        highScore = parseInt(localStorage.getItem('flappyHighScore') || '0');
+        balance = parseInt(localStorage.getItem('flappyCoins') || '0');
+        xp = parseInt(localStorage.getItem('flappyXP') || '0');
+        ownedBirds = JSON.parse(localStorage.getItem('flappyOwnedBirds') || '["bird1.png"]');
+        updateLevel();
+        updateAllStats();
+        updateShop();
+        updateEquipMenu();
+    } catch (e) {
+        console.error('Error loading saves:', e);
+    }
 }
 function saveSaves() {
-    localStorage.setItem('flappyHighScore', highScore);
-    localStorage.setItem('flappyCoins', balance);
-    localStorage.setItem('flappyXP', xp);
-    localStorage.setItem('flappyOwnedBirds', JSON.stringify(ownedBirds));
+    try {
+        localStorage.setItem('flappyHighScore', highScore);
+        localStorage.setItem('flappyCoins', balance);
+        localStorage.setItem('flappyXP', xp);
+        localStorage.setItem('flappyOwnedBirds', JSON.stringify(ownedBirds));
+    } catch (e) {
+        console.error('Error saving data:', e);
+    }
 }
 function updateAllStats() {
     uiHighScore.textContent = `BEST: ${highScore}`;
@@ -116,16 +132,16 @@ resize();
 // Bird
 class Bird {
     constructor(src) {
-        this.img = birdImages[src];
+        this.img = birdImages[src] || birdImages['bird1.png'];
         this.w = 60; this.h = 44;
         this.x = canvas.width * 0.2;
         this.y = canvas.height / 2;
         this.vel = 0;
     }
-    update() {
+    update(deltaTime) {
         if (isPaused || !gameRunning) return;
-        this.vel += gravity;
-        this.y += this.vel;
+        this.vel += gravity * deltaTime;
+        this.y += this.vel * deltaTime;
         if (this.y + this.h > canvas.height - 100 || this.y < -this.h) this.die();
     }
     draw() {
@@ -151,9 +167,9 @@ class Pipe {
         this.speed = 4;
         this.passed = false;
     }
-    update() {
+    update(deltaTime) {
         if (isPaused || !gameRunning) return;
-        this.x -= this.speed;
+        this.x -= this.speed * deltaTime;
         if (this.x + this.w < 0) {
             pipes = pipes.filter(p => p !== this);
             return;
@@ -169,7 +185,6 @@ class Pipe {
                 updateAllStats();
             }
             if (pipesPassed % 20 === 0) addXP(1);
-            // Coin every 10-15 pipes, outside gap
             if (pipesPassed % (10 + Math.floor(Math.random() * 6)) === 0) {
                 const coinY = Math.random() < 0.5 ? this.top - 60 : this.bottom + 20;
                 coins.push(new Coin(this.x + this.w/2, coinY));
@@ -202,9 +217,9 @@ class Coin {
         this.y = Math.max(50, Math.min(y, canvas.height - 150));
         this.collected = false;
     }
-    update() {
+    update(deltaTime) {
         if (isPaused || !gameRunning) return;
-        this.x -= 4;
+        this.x -= 4 * deltaTime;
         if (this.x + this.w < 0) coins = coins.filter(c => c !== this);
         if (!this.collected && this.hits(bird)) {
             this.collected = true;
@@ -240,11 +255,14 @@ function spawnCloud() {
 }
 
 // Game loop
-function loop() {
+function loop(timestamp) {
     if (!gameRunning || isPaused) {
         if (gameRunning && isPaused) requestAnimationFrame(loop);
         return;
     }
+
+    const deltaTime = (timestamp - lastTime) / 16.67; // Normalize to 60 FPS
+    lastTime = timestamp;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -258,10 +276,10 @@ function loop() {
 
     // Clouds
     spawnCloud();
+    clouds = clouds.filter(c => c.x + 200 >= 0); // Fixed cloud removal
     clouds.forEach(c => {
-        c.x -= c.speed;
-        c.y += Math.sin(frames * c.wobble) * 0.5;
-        if (c.x + 200 < 0) clouds = clouds.filter(cl => cl !== c);
+        c.x -= c.speed * deltaTime;
+        c.y += Math.sin(frames * c.wobble) * 0.5 * deltaTime;
         ctx.globalAlpha = 0.8;
         ctx.drawImage(cloudImg, c.x, c.y, 200, 120);
         ctx.globalAlpha = 1;
@@ -273,7 +291,7 @@ function loop() {
     ctx.fillStyle = '#5d8c4f';
     ctx.fillRect(0, canvas.height - 100, canvas.width, 20);
 
-    bird.update();
+    bird.update(deltaTime);
     bird.draw();
 
     if (frames - lastPipe > 90) {
@@ -281,31 +299,36 @@ function loop() {
         lastPipe = frames;
     }
 
-    pipes.forEach(p => { p.update(); p.draw(); if (p.hits(bird)) bird.die(); });
-    coins.forEach(c => { c.update(); c.draw(); });
+    pipes.forEach(p => { p.update(deltaTime); p.draw(); if (p.hits(bird)) bird.die(); });
+    coins.forEach(c => { c.update(deltaTime); c.draw(); });
 
     frames++;
     requestAnimationFrame(loop);
 }
 
 // Input
+let lastTouchTime = 0;
 function flap(e) {
     if (!gameRunning || isPaused) return;
     if (e.type === 'keydown' && e.code !== 'Space') return;
-    if (e.target.closest('.ui-btn, button')) return;
+    if (e.target.closest('.btn')) return;
+    const now = Date.now();
+    if (e.type === 'touchstart' && now - lastTouchTime < 200) return; // Debounce touch
     bird.flap();
+    if (e.type === 'touchstart') lastTouchTime = now;
     e.preventDefault();
 }
 canvas.addEventListener('mousedown', flap);
-canvas.addEventListener('touchstart', flap);
+canvas.addEventListener('touchstart', flap, { passive: false });
 document.addEventListener('keydown', flap);
 
 // Pause/Resume
 function togglePause() {
-    if (!gameRunning) return;
+    if (!gameRunning || gameover.classList.contains('hidden') === false) return;
     isPaused = !isPaused;
     pauseBtn.textContent = isPaused ? 'RESUME' : 'PAUSE';
     pausedOverlay.classList.toggle('hidden', !isPaused);
+    if (!isPaused) requestAnimationFrame(loop);
 }
 function resumeGame() {
     if (!isPaused) return;
@@ -332,6 +355,7 @@ function startGame(birdSrc) {
     bird = new Bird(currentBird);
     pipes = []; coins = []; clouds = [];
     score = 0; pipesPassed = 0; frames = 0; lastPipe = 0;
+    lastTime = performance.now();
     liveScore.textContent = '0';
     gameRunning = true;
     updateAllStats();
@@ -406,23 +430,32 @@ function updateShop() {
             if (btn) btn.remove();
         } else {
             item.classList.remove('owned');
+            if (btn) {
+                btn.disabled = balance < birdPrices[src];
+            }
         }
     });
 }
-document.querySelectorAll('.buy-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const item = btn.closest('.shop-item');
-        const src = item.dataset.bird;
-        const price = birdPrices[src];
-        if (ownedBirds.includes(src) || balance < price) return;
-        balance -= price;
-        ownedBirds.push(src);
-        saveSaves();
-        updateAllStats();
-        updateShop();
-        updateEquipMenu();
+function attachShopListeners() {
+    document.querySelectorAll('.buy-btn').forEach(btn => {
+        btn.removeEventListener('click', handleBuy); // Prevent duplicate listeners
+        btn.addEventListener('click', handleBuy);
     });
-});
+}
+function handleBuy(e) {
+    const item = e.target.closest('.shop-item');
+    const src = item.dataset.bird;
+    const price = birdPrices[src];
+    if (ownedBirds.includes(src) || balance < price) return;
+    if (!confirm(`Buy ${birdNames[birdOptions.indexOf(src)]} for ${price} coins?`)) return;
+    balance -= price;
+    ownedBirds.push(src);
+    saveSaves();
+    updateAllStats();
+    updateShop();
+    attachShopListeners();
+    updateEquipMenu();
+}
 
 restartBtn2.onclick = () => startGame(currentBird);
 menuBtn2.onclick = goToMenu;
@@ -431,5 +464,6 @@ menuBtn2.onclick = goToMenu;
 window.addEventListener('load', () => {
     updateAllStats();
     updateShop();
+    attachShopListeners();
     updateEquipMenu();
 });
