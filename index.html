@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Flappy Bird</title>
+  <title>Flappy Blud</title>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -11,7 +11,7 @@
 
   <!-- MENU SCREEN -->
   <div id="menu" class="screen">
-    <h1>FLAPPY BIRD</h1>
+    <h1>FLAPPY BLUD</h1>
     <div id="menuStats">
       <div id="menuHighScore">HIGH: 0</div>
       <div id="menuBalance">COINS: 0</div>
@@ -94,7 +94,10 @@
       </div>
     </div>
     <button id="pauseBtn" class="ui-btn">PAUSE</button>
-    <div id="pausedOverlay" class="hidden"></div>
+    <div id="pausedOverlay" class="overlay hidden">
+      <h2>PAUSED</h2>
+      <button id="resumeBtn" class="ui-btn">RESUME</button>
+    </div>
   </div>
 
   <!-- GAME OVER SCREEN -->
