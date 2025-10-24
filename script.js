@@ -1,6 +1,4 @@
-// -------------------------------------------------
 // Config & globals
-// -------------------------------------------------
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const menu = document.getElementById('menu');
@@ -36,14 +34,14 @@ const equipBirdBtn = document.getElementById('equipBird');
 let bird, pipes = [], coins = [], clouds = [], score = 0, highScore = 0, balance = 0, xp = 0, level = 1, gameRunning = false, isPaused = false;
 const gravity = 0.6, jump = -10;
 let frames = 0, lastPipe = 0, pipesPassed = 0;
+
+const birdOptions = Array.from({length: 8}, (_, i) => `bird${i+1}.png`);
 const birdNames = Array.from({length: 8}, (_, i) => `Bird ${i+1}`);
 const birdPrices = { 'bird1.png': 0, 'bird2.png': 10, 'bird3.png': 20, 'bird4.png': 30, 'bird5.png': 40, 'bird6.png': 50, 'bird7.png': 60, 'bird8.png': 70 };
 let ownedBirds = ['bird1.png'], currentBirdIndex = 0;
 
-// Preload
+// Preload assets
 const birdImages = {}, cloudImg = new Image(), coinImg = new Image();
-const birdOptions = Array.from({length: 8}, (_, i) => `bird${i+1}.png`);
-
 function preload() {
     birdOptions.forEach(src => {
         const img = new Image();
@@ -55,12 +53,12 @@ function preload() {
 }
 preload();
 
-// Saves
+// Save/load
 function loadSaves() {
     highScore = parseInt(localStorage.getItem('flappyHighScore') || '0');
     balance = parseInt(localStorage.getItem('flappyCoins') || '0');
-    ownedBirds = JSON.parse(localStorage.getItem('flappyOwnedBirds') || '["bird1.png"]');
     xp = parseInt(localStorage.getItem('flappyXP') || '0');
+    ownedBirds = JSON.parse(localStorage.getItem('flappyOwnedBirds') || '["bird1.png"]');
     updateLevel();
     updateAllStats();
     updateShop();
@@ -69,36 +67,9 @@ function loadSaves() {
 function saveSaves() {
     localStorage.setItem('flappyHighScore', highScore);
     localStorage.setItem('flappyCoins', balance);
-    localStorage.setItem('flappyOwnedBirds', JSON.stringify(ownedBirds));
     localStorage.setItem('flappyXP', xp);
+    localStorage.setItem('flappyOwnedBirds', JSON.stringify(ownedBirds));
 }
-loadSaves();
-
-// Level System
-function updateLevel() {
-    let newLevel = 1;
-    while (xp >= newLevel * 40) newLevel++;
-    newLevel--;
-    if (newLevel !== level) {
-        level = newLevel;
-        xp = xp % (level * 40);
-    }
-}
-function addXP(amount) {
-    xp += amount;
-    updateLevel();
-    updateProgressBars();
-    saveSaves();
-}
-function updateProgressBars() {
-    const progress = (xp / (level * 40)) * 100;
-    uiProgressBar.style.width = progress + '%';
-    menuProgressBar.style.width = progress + '%';
-    uiLevel.textContent = `LVL ${level}`;
-    menuLevel.textContent = `LEVEL ${level}`;
-}
-updateProgressBars();
-
 function updateAllStats() {
     uiHighScore.textContent = `BEST: ${highScore}`;
     uiBalance.textContent = `${balance}`;
@@ -106,11 +77,35 @@ function updateAllStats() {
     menuBalance.textContent = `COINS: ${balance}`;
     highScoreEl.textContent = `High Score: ${highScore}`;
     finalBalance.textContent = `Coins: ${balance}`;
+    uiLevel.textContent = `LVL ${level}`;
+    menuLevel.textContent = `LEVEL ${level}`;
+}
+loadSaves();
+
+// Level System
+function updateLevel() {
+    let newLevel = 1;
+    let totalXP = xp;
+    while (totalXP >= newLevel * 40) {
+        totalXP -= newLevel * 40;
+        newLevel++;
+    }
+    level = newLevel;
+    xp = totalXP;
+    const progress = (xp / (level * 40)) * 100;
+    uiProgressBar.style.width = `${progress}%`;
+    menuProgressBar.style.width = `${progress}%`;
+}
+function addXP(amount) {
+    xp += amount;
+    updateLevel();
+    saveSaves();
+}
+function addCoinXP() {
+    addXP(1); // 1 XP per coin collected
 }
 
-// -------------------------------------------------
 // Resize
-// -------------------------------------------------
 function resize() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -118,9 +113,7 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 
-// -------------------------------------------------
 // Bird
-// -------------------------------------------------
 class Bird {
     constructor(src) {
         this.img = birdImages[src];
@@ -147,9 +140,7 @@ class Bird {
     die() { endGame(); }
 }
 
-// -------------------------------------------------
 // Pipe
-// -------------------------------------------------
 class Pipe {
     constructor() {
         this.gap = 180;
@@ -178,11 +169,11 @@ class Pipe {
                 updateAllStats();
             }
             if (pipesPassed % 20 === 0) addXP(1);
-            // Coin - OUTSIDE gap, reachable
-            const coinY = Math.random() < 0.5 
-                ? this.top - 60 
-                : this.bottom + 20;
-            coins.push(new Coin(this.x + this.w/2, coinY));
+            // Coin every 10-15 pipes, outside gap
+            if (pipesPassed % (10 + Math.floor(Math.random() * 6)) === 0) {
+                const coinY = Math.random() < 0.5 ? this.top - 60 : this.bottom + 20;
+                coins.push(new Coin(this.x + this.w/2, coinY));
+            }
         }
     }
     draw() {
@@ -203,14 +194,12 @@ class Pipe {
     }
 }
 
-// -------------------------------------------------
 // Coin
-// -------------------------------------------------
 class Coin {
     constructor(x, y) {
         this.w = 40; this.h = 40;
         this.x = x;
-        this.y = y;
+        this.y = Math.max(50, Math.min(y, canvas.height - 150));
         this.collected = false;
     }
     update() {
@@ -220,6 +209,7 @@ class Coin {
         if (!this.collected && this.hits(bird)) {
             this.collected = true;
             balance++;
+            addCoinXP();
             updateAllStats();
             saveSaves();
         }
@@ -235,25 +225,21 @@ class Coin {
     }
 }
 
-// -------------------------------------------------
-// Clouds (Spaced naturally)
+// Clouds
 let lastCloudTime = 0;
 function spawnCloud() {
     const now = Date.now();
-    if (now - lastCloudTime > 4000 + Math.random() * 3000) {
-        clouds.push({
-            x: canvas.width + 100,
-            y: 50 + Math.random() * (canvas.height * 0.3),
-            speed: 0.3 + Math.random() * 0.4,
-            wobble: Math.random() * 0.02
-        });
-        lastCloudTime = now;
-    }
+    if (now - lastCloudTime < 4000 + Math.random() * 3000) return;
+    clouds.push({
+        x: canvas.width + 100,
+        y: 50 + Math.random() * (canvas.height * 0.3),
+        speed: 0.3 + Math.random() * 0.4,
+        wobble: Math.random() * 0.02
+    });
+    lastCloudTime = now;
 }
 
-// -------------------------------------------------
 // Game loop
-// -------------------------------------------------
 function loop() {
     if (!gameRunning || isPaused) {
         if (gameRunning && isPaused) requestAnimationFrame(loop);
@@ -302,9 +288,7 @@ function loop() {
     requestAnimationFrame(loop);
 }
 
-// -------------------------------------------------
 // Input
-// -------------------------------------------------
 function flap(e) {
     if (!gameRunning || isPaused) return;
     if (e.type === 'keydown' && e.code !== 'Space') return;
@@ -316,32 +300,25 @@ canvas.addEventListener('mousedown', flap);
 canvas.addEventListener('touchstart', flap);
 document.addEventListener('keydown', flap);
 
-// -------------------------------------------------
-// Pause/Resume (Button Only)
+// Pause/Resume
 function togglePause() {
     if (!gameRunning) return;
     isPaused = !isPaused;
     pauseBtn.textContent = isPaused ? 'RESUME' : 'PAUSE';
     pausedOverlay.classList.toggle('hidden', !isPaused);
 }
-
 function resumeGame() {
+    if (!isPaused) return;
     isPaused = false;
     pauseBtn.textContent = 'PAUSE';
     pausedOverlay.classList.add('hidden');
     requestAnimationFrame(loop);
 }
-
 pauseBtn.addEventListener('click', togglePause);
-pausedOverlay.addEventListener('click', (e) => {
-    if (e.target === pausedOverlay || e.target === resumeBtn) resumeGame();
-});
+resumeBtn.addEventListener('click', resumeGame);
 
-// -------------------------------------------------
 // Game Flow
-// -------------------------------------------------
 let currentBird = 'bird1.png';
-
 function startGame(birdSrc) {
     currentBird = birdSrc;
     menu.classList.add('hidden');
@@ -354,19 +331,18 @@ function startGame(birdSrc) {
 
     bird = new Bird(currentBird);
     pipes = []; coins = []; clouds = [];
-    score = 0; liveScore.textContent = '0';
-    pipesPassed = 0; frames = 0; lastPipe = 0;
+    score = 0; pipesPassed = 0; frames = 0; lastPipe = 0;
+    liveScore.textContent = '0';
     gameRunning = true;
+    updateAllStats();
     requestAnimationFrame(loop);
 }
-
 function endGame() {
     gameRunning = false;
     finalScore.textContent = `Score: ${score}`;
     updateAllStats();
     gameover.classList.remove('hidden');
 }
-
 function goToMenu() {
     game.classList.add('hidden');
     menu.classList.remove('hidden');
@@ -376,28 +352,24 @@ function goToMenu() {
     showPlayTab();
 }
 
-// -------------------------------------------------
 // Menu Tabs
-// -------------------------------------------------
-function showPlayTab() { 
+function showPlayTab() {
     playTab.classList.add('active');
     shopTab.classList.remove('active');
     playScreen.classList.remove('hidden');
     shopScreen.classList.add('hidden');
     updateEquipMenu();
 }
-function showShopTab() { 
+function showShopTab() {
     playTab.classList.remove('active');
     shopTab.classList.add('active');
     playScreen.classList.add('hidden');
     shopScreen.classList.remove('hidden');
     updateShop();
 }
-
 playTab.addEventListener('click', showPlayTab);
 shopTab.addEventListener('click', showShopTab);
 
-// -------------------------------------------------
 // Equip Menu
 function updateEquipMenu() {
     currentBirdIndex = ownedBirds.indexOf(currentBird);
@@ -405,13 +377,11 @@ function updateEquipMenu() {
         currentBirdIndex = 0;
         currentBird = ownedBirds[0];
     }
-    const birdSrc = ownedBirds[currentBirdIndex];
-    currentBirdName.textContent = birdNames[ownedBirds.indexOf(birdSrc)];
-    previewImg.src = 'assets/' + birdSrc;
+    currentBirdName.textContent = birdNames[birdOptions.indexOf(ownedBirds[currentBirdIndex])];
+    previewImg.src = 'assets/' + ownedBirds[currentBirdIndex];
     prevBirdBtn.disabled = currentBirdIndex === 0;
     nextBirdBtn.disabled = currentBirdIndex === ownedBirds.length - 1;
 }
-
 prevBirdBtn.addEventListener('click', () => {
     if (currentBirdIndex > 0) {
         currentBirdIndex--;
@@ -426,7 +396,6 @@ nextBirdBtn.addEventListener('click', () => {
 });
 equipBirdBtn.addEventListener('click', () => startGame(ownedBirds[currentBirdIndex]));
 
-// -------------------------------------------------
 // Shop
 function updateShop() {
     document.querySelectorAll('.shop-item').forEach(item => {
@@ -435,10 +404,11 @@ function updateShop() {
         if (ownedBirds.includes(src)) {
             item.classList.add('owned');
             if (btn) btn.remove();
+        } else {
+            item.classList.remove('owned');
         }
     });
 }
-
 document.querySelectorAll('.buy-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         const item = btn.closest('.shop-item');
@@ -457,9 +427,7 @@ document.querySelectorAll('.buy-btn').forEach(btn => {
 restartBtn2.onclick = () => startGame(currentBird);
 menuBtn2.onclick = goToMenu;
 
-// -------------------------------------------------
 // Init
-// -------------------------------------------------
 window.addEventListener('load', () => {
     updateAllStats();
     updateShop();
