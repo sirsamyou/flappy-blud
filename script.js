@@ -14,13 +14,12 @@ const restartBtn2 = document.getElementById('restartBtn2');
 const menuBtn2 = document.getElementById('menuBtn2');
 const liveScore = document.getElementById('liveScore');
 const uiHighScore = document.getElementById('uiHighScore');
-const uiBalance = document.getElementById('uiBalance');
-const uiLevel = document.getElementById('uiLevel');
-const uiProgressBar = document.getElementById('uiProgressBar');
 const menuHighScore = document.getElementById('menuHighScore');
 const menuBalance = document.getElementById('menuBalance');
-const menuLevel = document.getElementById('menuLevel');
+const currentLevel = document.getElementById('currentLevel');
+const nextLevel = document.getElementById('nextLevel');
 const menuProgressBar = document.getElementById('menuProgressBar');
+const xpText = document.getElementById('xpText');
 const playTab = document.getElementById('playTab');
 const shopTab = document.getElementById('shopTab');
 const playScreen = document.getElementById('playScreen');
@@ -88,13 +87,10 @@ function saveSaves() {
 }
 function updateAllStats() {
     uiHighScore.textContent = `BEST: ${highScore}`;
-    uiBalance.textContent = `${balance}`;
     menuHighScore.textContent = `HIGH: ${highScore}`;
     menuBalance.textContent = `COINS: ${balance}`;
     highScoreEl.textContent = `High Score: ${highScore}`;
     finalBalance.textContent = `Coins: ${balance}`;
-    uiLevel.textContent = `LVL ${level}`;
-    menuLevel.textContent = `LEVEL ${level}`;
 }
 loadSaves();
 
@@ -109,8 +105,10 @@ function updateLevel() {
     level = newLevel;
     xp = totalXP;
     const progress = (xp / (level * 40)) * 100;
-    uiProgressBar.style.width = `${progress}%`;
     menuProgressBar.style.width = `${progress}%`;
+    currentLevel.textContent = `LVL ${level}`;
+    nextLevel.textContent = `LVL ${level + 1}`;
+    xpText.textContent = `${xp}/40`;
 }
 function addXP(amount) {
     xp += amount;
@@ -184,9 +182,12 @@ class Pipe {
                 saveSaves();
                 updateAllStats();
             }
-            if (pipesPassed % 20 === 0) addXP(1);
+            if (pipesPassed % 10 === 0) addXP(1); // 1 XP every 10 pipes
             if (pipesPassed % (10 + Math.floor(Math.random() * 6)) === 0) {
-                const coinY = Math.random() < 0.5 ? this.top - 60 : this.bottom + 20;
+                // Ensure coins spawn in safe areas
+                const safeTop = Math.max(50, this.top - 100);
+                const safeBottom = Math.min(canvas.height - 150, this.bottom + 100);
+                const coinY = safeTop + Math.random() * (safeBottom - safeTop);
                 coins.push(new Coin(this.x + this.w/2, coinY));
             }
         }
@@ -261,7 +262,7 @@ function loop(timestamp) {
         return;
     }
 
-    const deltaTime = (timestamp - lastTime) / 16.67; // Normalize to 60 FPS
+    const deltaTime = Math.min((timestamp - lastTime) / 16.67, 2); // Cap deltaTime to prevent large jumps
     lastTime = timestamp;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -276,7 +277,7 @@ function loop(timestamp) {
 
     // Clouds
     spawnCloud();
-    clouds = clouds.filter(c => c.x + 200 >= 0); // Fixed cloud removal
+    clouds = clouds.filter(c => c.x + 200 >= 0);
     clouds.forEach(c => {
         c.x -= c.speed * deltaTime;
         c.y += Math.sin(frames * c.wobble) * 0.5 * deltaTime;
@@ -324,17 +325,21 @@ document.addEventListener('keydown', flap);
 
 // Pause/Resume
 function togglePause() {
-    if (!gameRunning || gameover.classList.contains('hidden') === false) return;
+    if (!gameRunning || !gameover.classList.contains('hidden')) return;
     isPaused = !isPaused;
     pauseBtn.textContent = isPaused ? 'RESUME' : 'PAUSE';
     pausedOverlay.classList.toggle('hidden', !isPaused);
-    if (!isPaused) requestAnimationFrame(loop);
+    if (!isPaused) {
+        lastTime = performance.now();
+        requestAnimationFrame(loop);
+    }
 }
 function resumeGame() {
     if (!isPaused) return;
     isPaused = false;
     pauseBtn.textContent = 'PAUSE';
     pausedOverlay.classList.add('hidden');
+    lastTime = performance.now();
     requestAnimationFrame(loop);
 }
 pauseBtn.addEventListener('click', togglePause);
@@ -397,14 +402,14 @@ shopTab.addEventListener('click', showShopTab);
 // Equip Menu
 function updateEquipMenu() {
     currentBirdIndex = ownedBirds.indexOf(currentBird);
-    if (currentBirdIndex === -1) {
+    if (currentBirdIndex === -1 || !ownedBirds.length) {
         currentBirdIndex = 0;
-        currentBird = ownedBirds[0];
+        currentBird = ownedBirds[0] || 'bird1.png';
     }
-    currentBirdName.textContent = birdNames[birdOptions.indexOf(ownedBirds[currentBirdIndex])];
+    currentBirdName.textContent = birdNames[birdOptions.indexOf(ownedBirds[currentBirdIndex])] || 'Bird 1';
     previewImg.src = 'assets/' + ownedBirds[currentBirdIndex];
-    prevBirdBtn.disabled = currentBirdIndex === 0;
-    nextBirdBtn.disabled = currentBirdIndex === ownedBirds.length - 1;
+    prevBirdBtn.disabled = currentBirdIndex === 0 || ownedBirds.length <= 1;
+    nextBirdBtn.disabled = currentBirdIndex === ownedBirds.length - 1 || ownedBirds.length <= 1;
 }
 prevBirdBtn.addEventListener('click', () => {
     if (currentBirdIndex > 0) {
@@ -430,15 +435,13 @@ function updateShop() {
             if (btn) btn.remove();
         } else {
             item.classList.remove('owned');
-            if (btn) {
-                btn.disabled = balance < birdPrices[src];
-            }
+            if (btn) btn.disabled = balance < birdPrices[src];
         }
     });
 }
 function attachShopListeners() {
     document.querySelectorAll('.buy-btn').forEach(btn => {
-        btn.removeEventListener('click', handleBuy); // Prevent duplicate listeners
+        btn.removeEventListener('click', handleBuy);
         btn.addEventListener('click', handleBuy);
     });
 }
