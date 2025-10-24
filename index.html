@@ -11,15 +11,20 @@
   <main>
     <!-- MENU SCREEN -->
     <div id="menu" class="screen">
-      <h1>FLAPPY BLUD</h1>
       <div id="menuStats">
         <div id="menuHighScore">HIGH: 0</div>
         <div id="menuBalance">COINS: 0</div>
-        <div id="menuLevel">LEVEL 1</div>
-        <div class="progress-container">
-          <div id="menuProgressBar"></div>
+        <div class="level-progress">
+          <span id="currentLevel">LVL 1</span>
+          <div class="progress-container">
+            <div id="menuProgressBar">
+              <span id="xpText">0/40</span>
+            </div>
+          </div>
+          <span id="nextLevel">LVL 2</span>
         </div>
       </div>
+      <h1>FLAPPY BLUD</h1>
       <div class="menu-tabs">
         <button id="playTab" class="tab-btn active" aria-label="Switch to play tab">PLAY</button>
         <button id="shopTab" class="tab-btn" aria-label="Switch to shop tab">SHOP</button>
@@ -87,11 +92,6 @@
       <div id="ui">
         <div id="liveScore">0</div>
         <div id="uiHighScore">BEST: 0</div>
-        <div id="uiBalance">COINS: 0</div>
-        <div id="uiLevel">LVL 1</div>
-        <div class="progress-container">
-          <div id="uiProgressBar"></div>
-        </div>
       </div>
       <button id="pauseBtn" class="ui-btn btn" aria-label="Pause or resume game">PAUSE</button>
       <div id="pausedOverlay" class="overlay hidden" role="dialog" aria-label="Paused game overlay">
