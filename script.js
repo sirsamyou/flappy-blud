@@ -1,6 +1,8 @@
 // Config & globals
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
+const mazeCanvas = document.getElementById('mazeCanvas');
+const mazeCtx = mazeCanvas.getContext('2d');
 const menu = document.getElementById('menu');
 const game = document.getElementById('game');
 const pauseBtn = document.getElementById('pauseBtn');
@@ -32,12 +34,20 @@ const prevBirdBtn = document.getElementById('prevBird');
 const nextBirdBtn = document.getElementById('nextBird');
 const playBtn = document.getElementById('playBtn');
 const achievementNotification = document.getElementById('achievementNotification');
+const modifierNotification = document.getElementById('modifierNotification');
 const title = document.getElementById('title');
+const secretProgress = document.getElementById('secretProgress');
+const secretProgressBar = document.getElementById('secretProgressBar');
+const secretCutscene = document.getElementById('secretCutscene');
+const mazeScreen = document.getElementById('mazeScreen');
+const exitMazeBtn = document.getElementById('exitMazeBtn');
 
 let bird, pipes = [], coins = [], clouds = [], score = 0, highScore = 0, balance = 0, xp = 0, level = 1;
-let gameRunning = false, isPaused = false, isSecretLevel = false;
+let gameRunning = false, isPaused = false, isSecretLevel = false, inMaze = false;
 const gravity = 0.6, jump = -10;
 let frames = 0, lastPipe = 0, pipesPassed = 0, lastTime = 0, totalCoinsCollected = 0;
+let secretModifiers = [], modifierTimer = 0, modifierInterval = 5000;
+let mazePlayer, mazeCoin, mazeWalls = [];
 
 const birdOptions = Array.from({length: 8}, (_, i) => `bird${i+1}.png`);
 const birdNames = Array.from({length: 8}, (_, i) => `Bird ${i+1}`);
@@ -49,15 +59,15 @@ const achievements = [
     { id: 'first_flight', name: 'First Flight', description: 'Score 10 points in a single run', condition: () => score >= 10, reward: 5, unlocked: false },
     { id: 'coin_collector', name: 'Coin Collector', description: 'Collect 10 coins total', condition: () => totalCoinsCollected >= 10, reward: 10, unlocked: false },
     { id: 'sky_master', name: 'Sky Master', description: 'Reach level 5', condition: () => level >= 5, reward: 20, unlocked: false },
-    { id: 'bird_enthusiast', name: 'Bird Enthusiast', description: 'Own 5 birds', condition: () => ownedBirds.length >= 5, reward: 30, unlocked: false },
+    { id: 'bird_enthusiast', name: 'Bird Enthusiast', description: 'Own 5 birds', condition: () => ownedBirds.length >= 5, reward: 30, unloaded: false },
     { id: 'high_flyer', name: 'High Flyer', description: 'Achieve a high score of 100', condition: () => highScore >= 100, reward: 50, unlocked: false },
-    { id: 'secret_seeker', name: 'Secret Seeker', description: '???', unlockedDescription: 'Found the secret level and scored exactly 13 points!', condition: () => isSecretLevel && score === 13, reward: 100, unlocked: false }
+    { id: 'secret_seeker', name: 'Secret Seeker', description: '???', unlockedDescription: 'Died with exactly 13 points in the secret level!', condition: () => isSecretLevel && score === 13 && !gameRunning, reward: 100, unlocked: false },
+    { id: 'maze_master', name: 'Maze Master', description: '???', unlockedDescription: 'Found the secret coin in the maze!', condition: () => mazeCoin?.collected, reward: 50, unlocked: false }
 ];
 let notificationQueue = [];
 
 // Secret Level Trigger
-let holdStart = null;
-let holdInterval = null;
+let holdStart = null, holdInterval = null;
 title.addEventListener('mousedown', startHold);
 title.addEventListener('touchstart', startHold, { passive: false });
 title.addEventListener('mouseup', endHold);
@@ -67,13 +77,16 @@ function startHold(e) {
     if (gameRunning) return;
     holdStart = Date.now();
     title.style.animation = 'titleHold 0.5s ease-in-out infinite alternate';
-    title.style.color = '#00ff88';
+    title.style.color = '#ff00ff';
+    secretProgress.classList.remove('hidden');
+    secretProgressBar.style.width = '0%';
     holdInterval = setInterval(() => {
         const heldTime = Date.now() - holdStart;
+        const progress = Math.min((heldTime / 13000) * 100, 100);
+        secretProgressBar.style.width = `${progress}%`;
         if (heldTime >= 13000) {
             endHold(e);
-            isSecretLevel = true;
-            startGame(ownedBirds[currentBirdIndex]);
+            showSecretCutscene();
         }
     }, 100);
     e.preventDefault();
@@ -84,9 +97,21 @@ function endHold(e) {
         clearInterval(holdInterval);
         title.style.animation = 'titlePulse 2s infinite alternate';
         title.style.color = '';
+        secretProgress.classList.add('hidden');
         holdStart = null;
         e.preventDefault();
     }
+}
+
+function showSecretCutscene() {
+    menu.classList.add('hidden');
+    game.classList.remove('hidden');
+    secretCutscene.classList.remove('hidden');
+    setTimeout(() => {
+        secretCutscene.classList.add('hidden');
+        isSecretLevel = true;
+        startGame(ownedBirds[currentBirdIndex]);
+    }, 2000);
 }
 
 // Preload assets
@@ -170,7 +195,7 @@ function updateLevel() {
     menuProgressBar.style.width = `${progress}%`;
     currentLevel.textContent = `LVL ${level}`;
     nextLevel.textContent = `LVL ${level + 1}`;
-    xpText.textContent = `${xp}/40`;
+    xpText.textContent = `${xp}/${level * 40}`;
 }
 function addXP(amount) {
     xp += amount;
@@ -178,7 +203,7 @@ function addXP(amount) {
     saveSaves();
 }
 function addCoinXP() {
-    addXP(1); // 1 XP per coin collected
+    addXP(1);
 }
 
 // Achievements
@@ -234,6 +259,8 @@ function updateAchievements() {
 function resize() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+    mazeCanvas.width = window.innerWidth;
+    mazeCanvas.height = window.innerHeight;
 }
 window.addEventListener('resize', resize);
 resize();
@@ -246,45 +273,48 @@ class Bird {
         this.x = canvas.width * 0.2;
         this.y = canvas.height / 2;
         this.vel = 0;
+        this.isUpsideDown = false;
     }
     update(deltaTime) {
-        if (isPaused || !gameRunning) return;
-        this.vel += gravity * deltaTime;
+        if (isPaused || !gameRunning || inMaze) return;
+        this.vel += gravity * deltaTime * (this.isUpsideDown ? -1 : 1);
         this.y += this.vel * deltaTime;
         if (this.y + this.h > canvas.height - 100 || this.y < -this.h) this.die();
     }
     draw() {
         ctx.save();
         ctx.translate(this.x, this.y);
-        const rot = Math.min(this.vel * 0.05, Math.PI / 3);
+        const rot = Math.min(this.vel * 0.05, Math.PI / 3) * (this.isUpsideDown ? -1 : 1);
         ctx.rotate(rot);
         if (isSecretLevel) {
             ctx.save();
-            ctx.filter = 'grayscale(100%)';
+            ctx.filter = secretModifiers.includes('darkness') ? 'brightness(50%)' : 'grayscale(100%)';
+            ctx.scale(1, this.isUpsideDown ? -1 : 1);
             ctx.drawImage(this.img, -this.w/2, -this.h/2, this.w, this.h);
             ctx.restore();
         } else {
+            ctx.scale(1, this.isUpsideDown ? -1 : 1);
             ctx.drawImage(this.img, -this.w/2, -this.h/2, this.w, this.h);
         }
         ctx.restore();
     }
-    flap() { this.vel = jump; }
+    flap() { this.vel = jump * (this.isUpsideDown ? -1 : 1); }
     die() { endGame(); }
 }
 
 // Pipe
 class Pipe {
     constructor() {
-        this.gap = 180;
+        this.gap = isSecretLevel ? 160 : 180;
         this.w = 80;
         this.top = Math.random() * (canvas.height - this.gap - 300) + 150;
         this.bottom = this.top + this.gap;
         this.x = canvas.width;
-        this.speed = 4;
+        this.speed = isSecretLevel && secretModifiers.includes('highSpeed') ? 6 : 4;
         this.passed = false;
     }
     update(deltaTime) {
-        if (isPaused || !gameRunning) return;
+        if (isPaused || !gameRunning || inMaze) return;
         this.x -= this.speed * deltaTime;
         if (this.x + this.w < 0) {
             pipes = pipes.filter(p => p !== this);
@@ -301,24 +331,13 @@ class Pipe {
                 saveSaves();
                 updateAllStats();
             }
-            if (score % 50 === 0) addXP(10); // 10 XP every 50 score
+            if (score % 50 === 0) addXP(10);
             if (pipesPassed % (10 + Math.floor(Math.random() * 6)) === 0) {
-                // Find safe Y zones for coin spawn
-                const safeZones = [];
-                let y = 100;
-                while (y < canvas.height - 150) {
-                    let isSafe = true;
-                    for (let p of pipes) {
-                        if (y > p.top - 50 && y < p.bottom + 50) {
-                            isSafe = false;
-                            break;
-                        }
-                    }
-                    if (isSafe) safeZones.push(y);
-                    y += 10;
-                }
-                const coinY = safeZones.length > 0 ? safeZones[Math.floor(Math.random() * safeZones.length)] : canvas.height / 2;
-                coins.push(new Coin(this.x + this.w/2, coinY));
+                const safeY = this.top + this.gap / 2;
+                coins.push(new Coin(this.x + this.w/2, safeY));
+            }
+            if (isSecretLevel && pipesPassed === 4 && bird.y < -this.h) {
+                enterMaze();
             }
             checkAchievements();
         }
@@ -351,8 +370,8 @@ class Coin {
         this.collected = false;
     }
     update(deltaTime) {
-        if (isPaused || !gameRunning) return;
-        this.x -= 4 * deltaTime;
+        if (isPaused || !gameRunning || inMaze) return;
+        this.x -= (isSecretLevel && secretModifiers.includes('highSpeed') ? 6 : 4) * deltaTime;
         if (this.x + this.w < 0) coins = coins.filter(c => c !== this);
         if (!this.collected && this.hits(bird)) {
             this.collected = true;
@@ -366,14 +385,10 @@ class Coin {
     }
     draw() {
         if (this.collected) return;
-        if (isSecretLevel) {
-            ctx.save();
-            ctx.filter = 'grayscale(100%)';
-            ctx.drawImage(coinImg, this.x, this.y, this.w, this.h);
-            ctx.restore();
-        } else {
-            ctx.drawImage(coinImg, this.x, this.y, this.w, this.h);
-        }
+        ctx.save();
+        if (isSecretLevel) ctx.filter = secretModifiers.includes('darkness') ? 'brightness(50%)' : 'grayscale(100%)';
+        ctx.drawImage(coinImg, this.x, this.y, this.w, this.h);
+        ctx.restore();
     }
     hits(b) {
         const bl = b.x - b.w/2, br = b.x + b.w/2;
@@ -381,6 +396,142 @@ class Coin {
         return br > this.x && bl < this.x + this.w && bb > this.y && bt < this.y + this.h;
     }
 }
+
+// Maze
+class MazePlayer {
+    constructor() {
+        this.w = 40; this.h = 40;
+        this.x = 50; this.y = mazeCanvas.height - 150;
+        this.speed = 5;
+    }
+    update() {
+        const newX = this.x, newY = this.y;
+        let dx = 0, dy = 0;
+        if (keys.w) dy -= this.speed;
+        if (keys.s) dy += this.speed;
+        if (keys.a) dx -= this.speed;
+        if (keys.d) dx += this.speed;
+        this.x += dx;
+        this.y += dy;
+        if (this.hitsWalls()) {
+            this.x = newX;
+            this.y = newY;
+        }
+        if (mazeCoin && !mazeCoin.collected && this.hitsCoin()) {
+            mazeCoin.collected = true;
+            balance += 20;
+            totalCoinsCollected += 20;
+            checkAchievements();
+            updateAllStats();
+            saveSaves();
+        }
+    }
+    draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.drawImage(bird.img, -this.w/2, -this.h/2, this.w, this.h);
+        ctx.restore();
+    }
+    hitsWalls() {
+        for (let wall of mazeWalls) {
+            if (this.x - this.w/2 < wall.x + wall.w &&
+                this.x + this.w/2 > wall.x &&
+                this.y - this.h/2 < wall.y + wall.h &&
+                this.y + this.h/2 > wall.y) {
+                return true;
+            }
+        }
+        return this.x - this.w/2 < 0 || this.x + this.w/2 > mazeCanvas.width ||
+               this.y - this.h/2 < 0 || this.y + this.h/2 > mazeCanvas.height;
+    }
+    hitsCoin() {
+        return this.x - this.w/2 < mazeCoin.x + mazeCoin.w &&
+               this.x + this.w/2 > mazeCoin.x &&
+               this.y - this.h/2 < mazeCoin.y + mazeCoin.h &&
+               this.y + this.h/2 > mazeCoin.y;
+    }
+}
+
+function generateMaze() {
+    mazeWalls = [];
+    const cellSize = 100;
+    const rows = Math.floor(mazeCanvas.height / cellSize);
+    const cols = Math.floor(mazeCanvas.width / cellSize);
+    const grid = Array(rows).fill().map(() => Array(cols).fill(true));
+    grid[0][0] = false;
+    const stack = [[0, 0]];
+    while (stack.length) {
+        const [x, y] = stack.pop();
+        const neighbors = [];
+        if (x > 1) neighbors.push([x-2, y]);
+        if (x < cols-2) neighbors.push([x+2, y]);
+        if (y > 1) neighbors.push([x, y-2]);
+        if (y < rows-2) neighbors.push([x, y+2]);
+        if (neighbors.length) {
+            stack.push([x, y]);
+            const [nx, ny] = neighbors[Math.floor(Math.random() * neighbors.length)];
+            grid[nx][ny] = false;
+            grid[(x+nx)/2][(y+ny)/2] = false;
+            stack.push([nx, ny]);
+        }
+    }
+    for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+            if (grid[y][x]) {
+                mazeWalls.push({ x: x * cellSize, y: y * cellSize, w: cellSize, h: cellSize });
+            }
+        }
+    }
+    mazeCoin = { x: mazeCanvas.width - 150, y: 100, w: 40, h: 40, collected: false };
+}
+
+function enterMaze() {
+    inMaze = true;
+    gameRunning = false;
+    mazeScreen.classList.remove('hidden');
+    mazePlayer = new MazePlayer();
+    generateMaze();
+    document.addEventListener('keydown', handleMazeInput);
+    document.addEventListener('keyup', handleMazeInput);
+    requestAnimationFrame(mazeLoop);
+}
+
+function exitMaze() {
+    inMaze = false;
+    mazeScreen.classList.add('hidden');
+    document.removeEventListener('keydown', handleMazeInput);
+    document.removeEventListener('keyup', handleMazeInput);
+    startGame(currentBird);
+}
+
+const keys = { w: false, a: false, s: false, d: false };
+function handleMazeInput(e) {
+    if (!inMaze) return;
+    const key = e.key.toLowerCase();
+    if (['w', 'a', 's', 'd'].includes(key)) {
+        keys[key] = e.type === 'keydown';
+        e.preventDefault();
+    }
+}
+
+function mazeLoop() {
+    if (!inMaze) return;
+    mazeCtx.clearRect(0, 0, mazeCanvas.width, mazeCanvas.height);
+    mazeCtx.fillStyle = '#333';
+    mazeCtx.fillRect(0, 0, mazeCanvas.width, mazeCanvas.height);
+    mazeWalls.forEach(wall => {
+        mazeCtx.fillStyle = '#2d5016';
+        mazeCtx.fillRect(wall.x, wall.y, wall.w, wall.h);
+    });
+    if (!mazeCoin.collected) {
+        mazeCtx.drawImage(coinImg, mazeCoin.x, mazeCoin.y, mazeCoin.w, mazeCoin.h);
+    }
+    mazePlayer.update();
+    mazePlayer.draw();
+    requestAnimationFrame(mazeLoop);
+}
+
+exitMazeBtn.addEventListener('click', exitMaze);
 
 // Clouds
 let lastCloudTime = 0;
@@ -390,15 +541,34 @@ function spawnCloud() {
     clouds.push({
         x: canvas.width + 100,
         y: 50 + Math.random() * (canvas.height * 0.3),
-        speed: 0.1 + Math.random() * 0.2, // Slower horizontal movement
-        wobble: Math.random() * 0.01 // Slower wobble
+        speed: 0.1 + Math.random() * 0.2,
+        wobble: Math.random() * 0.01
     });
     lastCloudTime = now;
 }
 
+// Secret Level Modifiers
+const possibleModifiers = [
+    { name: 'Upside Down', apply: () => bird.isUpsideDown = true, remove: () => bird.isUpsideDown = false },
+    { name: 'High Speed', apply: () => {}, remove: () => {} },
+    { name: 'Fog', apply: () => {}, remove: () => {} },
+    { name: 'Darkness', apply: () => {}, remove: () => {} }
+];
+function applyRandomModifier() {
+    if (!isSecretLevel || inMaze) return;
+    const available = possibleModifiers.filter(m => !secretModifiers.includes(m.name));
+    if (!available.length) return;
+    const modifier = available[Math.floor(Math.random() * available.length)];
+    secretModifiers.push(modifier.name);
+    modifier.apply();
+    modifierNotification.textContent = `Modifier: ${modifier.name}`;
+    modifierNotification.classList.remove('hidden');
+    setTimeout(() => modifierNotification.classList.add('hidden'), 2000);
+}
+
 // Game loop
 function loop(timestamp) {
-    if (!gameRunning || isPaused) {
+    if (!gameRunning || isPaused || inMaze) {
         if (gameRunning && isPaused) requestAnimationFrame(loop);
         return;
     }
@@ -411,9 +581,9 @@ function loop(timestamp) {
     // Sky
     const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
     if (isSecretLevel) {
-        grad.addColorStop(0, '#999');
-        grad.addColorStop(0.5, '#ccc');
-        grad.addColorStop(1, '#eee');
+        grad.addColorStop(0, '#666');
+        grad.addColorStop(0.5, '#999');
+        grad.addColorStop(1, '#ccc');
     } else {
         grad.addColorStop(0, '#87CEEB');
         grad.addColorStop(0.5, '#B0E0E6');
@@ -421,6 +591,12 @@ function loop(timestamp) {
     }
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Fog effect
+    if (isSecretLevel && secretModifiers.includes('Fog')) {
+        ctx.fillStyle = 'rgba(200,200,200,0.3)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
 
     // Vignette
     const vigGrad = ctx.createRadialGradient(canvas.width/2, canvas.height/2, canvas.height/4, canvas.width/2, canvas.height/2, canvas.height);
@@ -433,17 +609,13 @@ function loop(timestamp) {
     spawnCloud();
     clouds = clouds.filter(c => c.x + 200 >= 0);
     clouds.forEach(c => {
-        c.x -= c.speed * deltaTime * 0.5; // Even slower horizontal movement
-        c.y += Math.sin(frames * c.wobble) * 0.3 * deltaTime; // Gentle shaking
-        ctx.globalAlpha = 0.8;
-        if (isSecretLevel) {
-            ctx.save();
-            ctx.filter = 'grayscale(100%)';
-            ctx.drawImage(cloudImg, c.x, c.y, 200, 120);
-            ctx.restore();
-        } else {
-            ctx.drawImage(cloudImg, c.x, c.y, 200, 120);
-        }
+        c.x -= c.speed * deltaTime * 0.5;
+        c.y += Math.sin(frames * c.wobble) * 0.3 * deltaTime;
+        ctx.globalAlpha = isSecretLevel && secretModifiers.includes('Fog') ? 0.4 : 0.8;
+        ctx.save();
+        if (isSecretLevel) ctx.filter = secretModifiers.includes('Darkness') ? 'brightness(50%)' : 'grayscale(100%)';
+        ctx.drawImage(cloudImg, c.x, c.y, 200, 120);
+        ctx.restore();
         ctx.globalAlpha = 1;
     });
 
@@ -464,6 +636,11 @@ function loop(timestamp) {
     pipes.forEach(p => { p.update(deltaTime); p.draw(); if (p.hits(bird)) bird.die(); });
     coins.forEach(c => { c.update(deltaTime); c.draw(); });
 
+    if (isSecretLevel && timestamp - modifierTimer > modifierInterval) {
+        applyRandomModifier();
+        modifierTimer = timestamp;
+    }
+
     frames++;
     requestAnimationFrame(loop);
 }
@@ -471,7 +648,7 @@ function loop(timestamp) {
 // Input
 let lastTouchTime = 0;
 function flap(e) {
-    if (!gameRunning || isPaused) return;
+    if (!gameRunning || isPaused || inMaze) return;
     if (e.type === 'keydown' && e.code !== 'Space') return;
     if (e.target.closest('.btn')) return;
     const now = Date.now();
@@ -486,7 +663,7 @@ document.addEventListener('keydown', flap);
 
 // Pause/Resume
 function togglePause() {
-    if (!gameRunning || !gameover.classList.contains('hidden')) return;
+    if (!gameRunning || !gameover.classList.contains('hidden') || inMaze) return;
     isPaused = !isPaused;
     pauseBtn.textContent = isPaused ? 'RESUME' : 'PAUSE';
     pausedOverlay.classList.toggle('hidden', !isPaused);
@@ -518,7 +695,10 @@ function startGame(birdSrc) {
     pauseBtn.textContent = 'PAUSE';
     pausedOverlay.classList.add('hidden');
     achievementNotification.classList.add('hidden');
+    modifierNotification.classList.add('hidden');
     notificationQueue = [];
+    secretModifiers = [];
+    modifierTimer = performance.now();
 
     bird = new Bird(currentBird);
     pipes = []; coins = []; clouds = [];
@@ -535,16 +715,19 @@ function endGame() {
     checkAchievements();
     updateAllStats();
     gameover.classList.remove('hidden');
-    isSecretLevel = false; // Reset after game ends
+    isSecretLevel = false;
+    secretModifiers = [];
 }
 function goToMenu() {
     game.classList.add('hidden');
     menu.classList.remove('hidden');
     gameover.classList.add('hidden');
     achievementNotification.classList.add('hidden');
+    modifierNotification.classList.add('hidden');
     notificationQueue = [];
-    gameRunning = false; isPaused = false; isSecretLevel = false;
+    gameRunning = false; isPaused = false; isSecretLevel = false; inMaze = false;
     pausedOverlay.classList.add('hidden');
+    mazeScreen.classList.add('hidden');
     showInventoryTab();
 }
 
@@ -595,12 +778,14 @@ function updateEquipMenu() {
 prevBirdBtn.addEventListener('click', () => {
     if (currentBirdIndex > 0) {
         currentBirdIndex--;
+        currentBird = ownedBirds[currentBirdIndex];
         updateEquipMenu();
     }
 });
 nextBirdBtn.addEventListener('click', () => {
     if (currentBirdIndex < ownedBirds.length - 1) {
         currentBirdIndex++;
+        currentBird = ownedBirds[currentBirdIndex];
         updateEquipMenu();
     }
 });
@@ -635,6 +820,8 @@ function handleBuy(e) {
     if (!confirm(`Buy ${birdNames[birdOptions.indexOf(src)]} for ${price} coins?`)) return;
     balance -= price;
     ownedBirds.push(src);
+    currentBird = src;
+    currentBirdIndex = ownedBirds.length - 1;
     saveSaves();
     updateAllStats();
     updateShop();
